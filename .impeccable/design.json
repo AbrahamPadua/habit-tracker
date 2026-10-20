@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-19T00:00:00Z",
+  "title": "Design System: Our Space",
+  "extensions": {
+    "colorMeta": {
+      "me-violet": { "role": "primary", "displayName": "Me Violet", "canonical": "#5B3FB5", "dark": "#B6A5FF" },
+      "action": { "role": "neutral", "displayName": "Action", "canonical": "#1B2030", "dark": "#E7E9EF" },
+      "on-action": { "role": "neutral", "displayName": "On Action", "canonical": "#FBFBFC", "dark": "#14161C" },
+      "tonal": { "role": "neutral", "displayName": "Tonal", "canonical": "#DCE2EB", "dark": "#262C38" },
+      "partner-teal": { "role": "secondary", "displayName": "Partner Teal", "canonical": "#0E7066", "dark": "#62D3C3" },
+      "ground": { "role": "neutral", "displayName": "Ground", "canonical": "#E9ECF1", "dark": "#0F1115" },
+      "card": { "role": "neutral", "displayName": "Card Stock", "canonical": "#FBFBFC", "dark": "#181B22" },
+      "rule": { "role": "neutral", "displayName": "Blue Rule", "canonical": "#D2DCEA", "dark": "#2A3243" },
+      "ink": { "role": "neutral", "displayName": "Blue-Black Ink", "canonical": "#1B2030", "dark": "#E7E9EF" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The done count on each card only." },
+      "stamp": { "displayName": "Stamp", "purpose": "Weekday mark inside a stamp." }
+    },
+    "shadows": [
+      { "name": "fab", "value": "elevation 3 (Android Material)", "purpose": "The only shadow; lifts the add FAB." }
+    ],
+    "motion": [
+      { "name": "stamp-press", "value": "scale to 0.86, 70ms timing, spring back friction 5", "purpose": "Slot dips under the finger." },
+      { "name": "stamp-land", "value": "spring friction 6 tension 180, scale 1.35 to 1, rotate -12deg, opacity 0 to 1", "purpose": "Stamp lands. Skipped under reduce-motion." }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Stamp slot (stamped)",
+      "kind": "custom",
+      "refersTo": "stamp-slot",
+      "description": "The check control: empty slot that takes a rotated ink stamp.",
+      "html": "<div class=\"ds-slot\"><div class=\"ds-stamp\">MON</div></div>",
+      "css": ".ds-slot{width:40px;height:40px;border-radius:50%;border:1.5px solid #646D80;position:relative;display:flex;align-items:center;justify-content:center} .ds-stamp{position:absolute;inset:0;border-radius:50%;border:2px solid #5B3FB5;background:#5B3FB51F;color:#5B3FB5;font:700 11px monospace;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;transform:rotate(-12deg)}"
+    },
+    {
+      "name": "Item row",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Title over meta line, stamp slot on the right, hairline rule below.",
+      "html": "<div class=\"ds-row\"><div><div class=\"ds-title\">Read paper</div><div class=\"ds-meta\">Daily</div></div><div class=\"ds-slot2\"></div></div>",
+      "css": ".ds-row{display:flex;align-items:center;min-height:56px;padding:4px 0;border-bottom:1px solid #D2DCEA;background:#FBFBFC} .ds-row>div:first-child{flex:1} .ds-title{font:400 16px/22px sans-serif;color:#1B2030} .ds-meta{font:400 13px/18px sans-serif;color:#566074} .ds-slot2{width:40px;height:40px;margin:4px;border-radius:50%;border:1.5px solid #646D80}"
+    },
+    {
+      "name": "Filled Button",
+      "kind": "button",
+      "refersTo": "button-filled",
+      "description": "Primary action button.",
+      "html": "<button class=\"ds-btn\">Link up</button>",
+      "css": ".ds-btn{min-height:48px;padding:0 24px;border:0;border-radius:24px;background:#1B2030;color:#FBFBFC;font:600 15px sans-serif} .ds-btn:hover{opacity:.8} .ds-btn:focus-visible{outline:2px solid #1B2030;outline-offset:2px}"
+    },
+    {
+      "name": "Tonal Button",
+      "kind": "button",
+      "refersTo": "button-tonal",
+      "description": "Secondary action on card stock.",
+      "html": "<button class=\"ds-btn-tonal\">Link up</button>",
+      "css": ".ds-btn-tonal{min-height:48px;padding:0 24px;border:0;border-radius:24px;background:#DCE2EB;color:#1B2030;font:600 15px sans-serif} .ds-btn-tonal:hover{opacity:.8}"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Single-choice option; selected fills with action ink.",
+      "html": "<span class=\"ds-chip\">Tomorrow</span> <span class=\"ds-chip ds-chip-on\">Today</span>",
+      "css": ".ds-chip{display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:18px;border:1px solid #646D80;background:#FBFBFC;color:#1B2030;font:600 13px sans-serif} .ds-chip-on{background:#1B2030;border-color:#1B2030;color:#FBFBFC}"
+    },
+    {
+      "name": "Error text",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Inline error: ink text plus alert icon, no red.",
+      "html": "<div class=\"ds-err\"><span>(!)</span><span>Email or password is not right.</span></div>",
+      "css": ".ds-err{display:flex;gap:8px;align-items:flex-start;margin:8px 0;color:#1B2030;font:400 13px/18px sans-serif}"
+    },
+    {
+      "name": "FAB",
+      "kind": "custom",
+      "refersTo": "fab",
+      "description": "The one primary action: add.",
+      "html": "<button class=\"ds-fab\">+</button>",
+      "css": ".ds-fab{width:56px;height:56px;border:0;border-radius:16px;background:#1B2030;color:#FBFBFC;font:400 28px sans-serif;box-shadow:0 3px 6px rgba(0,0,0,.2)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Punch Card",
+    "overview": "Each person's day is an index card, and checking in presses a rubber date stamp into a round slot. Cool card stock, hairline blue rules, blue-black ink, and two stamp inks, with neutral ink controls: violet for me, teal for my partner. Hierarchy by scale contrast, no boxes. Nothing is red; unchecked means not recorded.",
+    "keyCharacteristics": [
+      "Index-card ground, hairline blue rules, blue-black ink.",
+      "Violet and teal are stamp inks, not UI accents; controls are neutral ink.",
+      "Rows are type plus a 48dp stamp slot on the right; no row borders or fills.",
+      "One big number per card, in the owner's ink.",
+      "Flat, with tonal surfaces only."
+    ],
+    "rules": [
+      { "name": "The Reserved Ink Rule", "body": "Violet and teal appear only on stamps, punches, a person's own count and the owner's card spinner. Controls (FAB, buttons, chips, switches, tabs) use action, tonal and ink.", "section": "colors" },
+      { "name": "The No Red Rule", "body": "No red, no warning hue, anywhere. Overdue and unrecorded are stated in plain muted text.", "section": "colors" },
+      { "name": "The Three Values Rule", "body": "A screen is ground, ink and stamp. A fourth color needs a reason the build already shows.", "section": "colors" },
+      { "name": "The Big Count Rule", "body": "One display-size number per card; everything else stays at body size or below.", "section": "typography" },
+      { "name": "The Tonal Only Rule", "body": "Separate surfaces by ground-versus-card value, not by shadows or card borders around rows.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do express done state as a stamp in the owning person's ink, with a screen-reader label on every check.",
+      "Do keep touch targets at 48dp.",
+      "Do separate rows with a hairline rule in rule, and give control borders faint so they meet 3:1.",
+      "Do show errors as ink text with an icon and an alert role.",
+      "Do keep the partner's card read-only and in teal.",
+      "Do honor reduce-motion for the stamp landing."
+    ],
+    "donts": [
+      "Don't use red or any alarm hue for overdue, missed or unrecorded.",
+      "Don't add progress rings, streak flames, confetti or rainbow habit cards.",
+      "Don't put borders or fills around rows.",
+      "Don't use violet or teal for controls, tabs, buttons, chips or the FAB."
+    ]
+  }
+}

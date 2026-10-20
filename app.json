@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Our Space",
+    "slug": "our-space",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.abrahampadua.ourspace"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#ECEFF3",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.abrahampadua.ourspace"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {}
+      ],
+      "expo-font"
+    ],
+    "scheme": "ourspace",
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

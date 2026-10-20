@@ -1,0 +1,194 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { updateItem } from '../../data/actions';
+import { useSession } from '../../data/session';
+import { describeDate } from '../../domain/dates';
+import { cadenceOn, describeCadence, isPaused, weekCount } from '../../domain/habits';
+import { goalProgress } from '../../domain/progress';
+import type { DateKey, Goal, Item } from '../../domain/types';
+import { Fab, SectionLabel } from '../../ui/controls';
+import { weekdayMark } from '../../ui/ItemRow';
+import { report } from '../../ui/report';
+import { Stamp } from '../../ui/Stamp';
+import { space, type, useTheme } from '../../ui/theme';
+
+export default function Goals() {
+  const t = useTheme();
+  const { myItems, partnerItems, partner, today } = useSession();
+
+  return (
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: t.ground }}>
+      <ScrollView contentContainerStyle={styles.page}>
+        <Text style={[type.headline, { color: t.ink, paddingTop: space.sm }]}>Goals</Text>
+        {myItems === null ? (
+          <ActivityIndicator color={t.muted} style={{ marginTop: space.xxl }} />
+        ) : (
+          <Board items={myItems} today={today} ink={t.me} editable />
+        )}
+        {partner?.sharing && partnerItems && (
+          <>
+            <Text style={[type.headline, { color: t.ink, paddingTop: space.lg }]}>{partner.name}</Text>
+            <Board items={partnerItems} today={today} ink={t.partner} />
+          </>
+        )}
+      </ScrollView>
+      <Fab onPress={() => router.push({ pathname: '/item', params: { type: 'goal' } })} label="Add a goal" />
+    </SafeAreaView>
+  );
+}
+
+function Board({ items, today, ink, editable }: { items: Item[]; today: DateKey; ink: string; editable?: boolean }) {
+  const t = useTheme();
+  const goals = items.filter((i): i is Goal => i.type === 'goal');
+  const open = goals.filter((g) => !g.doneOn);
+  const achieved = goals.filter((g) => g.doneOn);
+  const goalIds = new Set(goals.map((g) => g.id));
+  const loose = items.filter((i) => i.type !== 'goal' && (!i.goalId || !goalIds.has(i.goalId)) && isVisible(i));
+
+  if (!items.length) {
+    return (
+      <Text style={[type.body, { color: t.muted }]}>
+        {editable ? 'No goals yet. Goals are optional: add one with + when a few habits and tasks add up to something bigger.' : 'Nothing shared yet.'}
+      </Text>
+    );
+  }
+
+  return (
+    <View style={{ gap: space.md }}>
+      {open.map((g) => (
+        <GoalCard key={g.id} goal={g} items={items} today={today} ink={ink} editable={editable} />
+      ))}
+      {loose.length > 0 && (
+        <View style={[styles.card, { backgroundColor: t.card }]}>
+          <SectionLabel>Not in a goal</SectionLabel>
+          {loose.map((i) => (
+            <Line key={i.id} item={i} today={today} editable={editable} />
+          ))}
+        </View>
+      )}
+      {achieved.length > 0 && (
+        <View style={[styles.card, { backgroundColor: t.card }]}>
+          <SectionLabel>Achieved</SectionLabel>
+          {achieved.map((g) => (
+            <View key={g.id}>
+              <Pressable disabled={!editable} onPress={() => openItem(g.id)} style={styles.line}>
+                <MaterialCommunityIcons name="flag-checkered" size={18} color={ink} />
+                <Text style={[type.body, { color: t.ink, flex: 1 }]}>{g.title}</Text>
+                <Text style={[type.meta, { color: t.muted }]}>{describeDate(g.doneOn!, today)}</Text>
+              </Pressable>
+              {/* Open tasks of an achieved goal would otherwise appear nowhere. */}
+              {items
+                .filter((i) => i.type === 'task' && i.goalId === g.id && !i.doneOn && isVisible(i))
+                .map((i) => (
+                  <View key={i.id} style={{ paddingLeft: space.xl }}>
+                    <Line item={i} today={today} editable={editable} />
+                  </View>
+                ))}
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function GoalCard({ goal, items, today, ink, editable }: { goal: Goal; items: Item[]; today: DateKey; ink: string; editable?: boolean }) {
+  const t = useTheme();
+  const { user } = useSession();
+  const toggleMilestone = (g: Goal, id: string) =>
+    report(
+      updateItem(user!.uid, g.id, {
+        milestones: g.milestones.map((m) => (m.id === id ? { ...m, doneOn: m.doneOn ? null : today } : m)),
+      }),
+    );
+  const { done, total } = goalProgress(goal);
+  const children = items.filter((i) => i.type !== 'goal' && i.goalId === goal.id && isVisible(i));
+  return (
+    <View style={[styles.card, { backgroundColor: t.card }]}>
+      <Pressable disabled={!editable} onPress={() => openItem(goal.id)} accessibilityRole={editable ? 'button' : undefined}>
+        <View style={styles.goalHead}>
+          <Text style={[type.title, { color: t.ink, flex: 1 }]}>{goal.title}</Text>
+          {total > 0 && (
+            <Text>
+              <Text style={[type.headline, { color: ink }]}>{done}</Text>
+              <Text style={[type.meta, { color: t.muted }]}> of {total}</Text>
+            </Text>
+          )}
+        </View>
+        {total > 0 && (
+          <View style={styles.milestones}>
+            {goal.milestones.map((m) =>
+              editable ? (
+                <View key={m.id} style={styles.milestoneLine}>
+                  <Text style={[type.body, { color: m.doneOn ? t.muted : t.ink, flex: 1 }]}>{m.title}</Text>
+                  <Stamp
+                    size={28}
+                    stamped={!!m.doneOn}
+                    ink={ink}
+                    mark={weekdayMark(m.doneOn ?? today).slice(0, 2)}
+                    label={m.title}
+                    onPress={() => toggleMilestone(goal, m.id)}
+                  />
+                </View>
+              ) : (
+                <View key={m.id} style={[styles.milestoneLine, { minHeight: 28 }]}>
+                  <View style={[styles.dot, m.doneOn ? { backgroundColor: ink, borderColor: ink } : { borderColor: t.faint }]} />
+                  <Text style={[type.meta, { color: m.doneOn ? t.muted : t.ink, flex: 1 }]}>{m.title}</Text>
+                </View>
+              ),
+            )}
+          </View>
+        )}
+      </Pressable>
+      {children.length > 0 && (
+        <View style={[styles.children, { borderTopColor: t.rule }]}>
+          {children.map((i) => (
+            <Line key={i.id} item={i} today={today} editable={editable} />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function Line({ item, today, editable }: { item: Item; today: DateKey; editable?: boolean }) {
+  const t = useTheme();
+  let meta = '';
+  if (item.type === 'habit') {
+    const c = cadenceOn(item, today);
+    meta = isPaused(item, today) ? 'Paused' : c ? `${describeCadence(c)} · ${weekCount(item, today)} this week` : '';
+  } else if (item.type === 'task') {
+    meta = item.doneOn ? `Done ${describeDate(item.doneOn, today).toLowerCase()}` : item.due ? describeDate(item.due, today) : item.pinned ? 'Pinned' : 'No date';
+  }
+  return (
+    <Pressable disabled={!editable} onPress={() => openItem(item.id)} style={styles.line} accessibilityRole={editable ? 'button' : undefined}>
+      <MaterialCommunityIcons
+        name={item.type === 'habit' ? 'repeat' : item.type === 'task' && item.doneOn ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
+        size={18}
+        color={t.faint}
+      />
+      <Text style={[type.body, { color: t.ink, flex: 1 }]} numberOfLines={1}>
+        {item.title}
+      </Text>
+      <Text style={[type.meta, { color: t.muted }]}>{meta}</Text>
+    </Pressable>
+  );
+}
+
+// Dropped tasks are kept in data but leave every list.
+const isVisible = (i: Item) => !(i.type === 'task' && i.droppedOn);
+
+const openItem = (id: string) => router.push({ pathname: '/item', params: { id } });
+
+const styles = StyleSheet.create({
+  page: { padding: space.lg, paddingBottom: 120, gap: space.md },
+  card: { borderRadius: 20, padding: space.lg, paddingTop: space.md },
+  goalHead: { flexDirection: 'row', alignItems: 'flex-end', gap: space.md, minHeight: 40 },
+  milestones: { marginTop: space.xs },
+  milestoneLine: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  dot: { width: 10, height: 10, borderRadius: 5, borderWidth: 1.5 },
+  children: { marginTop: space.md, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: space.xs },
+  line: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 48 },
+});
