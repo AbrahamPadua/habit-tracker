@@ -44,11 +44,14 @@ Product reasoning lives in [PRODUCT.md](PRODUCT.md) and the behavior spec in [do
 
 ## Installable APK (no PC needed afterwards)
 
-Needs a free Expo account. `.env.local` is not uploaded to the build servers, so put the same four Firebase values under `build.preview.env` in `eas.json` first (the Firebase web config is not a secret; the security rules are what protect your data).
+Needs a free Expo account. `.env.local` is excluded from build uploads by `.gitignore`. Upload its four Firebase values to the EAS `preview` environment first; `eas.json` selects that environment for preview builds. Review the file before uploading so local emulator settings stay local. Choose plain text visibility for these `EXPO_PUBLIC_` values (the Firebase web config is not a secret; the security rules are what protect your data).
 
 ```bash
+npx eas-cli@latest env:push --environment preview --path .env.local
 npx eas-cli@latest build -p android --profile preview
 ```
+
+Run `env:push` again whenever those values change. See the [EAS environment variable docs](https://docs.expo.dev/eas/environment-variables/) for details.
 
 It prints a link to an `.apk` you can install on both phones. iPhone later: `npx eas-cli@latest build -p ios` (needs an Apple Developer account); Expo Go on iPhone works for testing before that.
 
