@@ -30,7 +30,8 @@
         "expo-notifications",
         {}
       ],
-      "expo-font"
+      "expo-font",
+      "expo-status-bar"
     ],
     "scheme": "ourspace",
     "experiments": {
