@@ -12,6 +12,7 @@ import { suggestionFor, type Suggestion } from '../../domain/suggestions';
 import { reschedule } from '../../domain/tasks';
 import { buildToday, type TodayRow } from '../../domain/today';
 import type { DateKey, Item } from '../../domain/types';
+import { Cat, type CatPose } from '../../ui/Cat';
 import { Button, Fab, SectionLabel } from '../../ui/controls';
 import { ItemRow } from '../../ui/ItemRow';
 import { report } from '../../ui/report';
@@ -53,7 +54,10 @@ export default function Today() {
           )
         ) : (
           <View style={[styles.card, { backgroundColor: t.card }]}>
-            <Text style={[type.title, { color: t.ink }]}>Your partner's card goes here</Text>
+            <View style={styles.cardHeader}>
+              <Cat pose="peek" ink={t.partner} />
+              <Text style={[type.title, { color: t.ink, flex: 1 }]}>Your partner's card goes here</Text>
+            </View>
             <Text style={[type.meta, { color: t.muted, marginTop: space.xs, marginBottom: space.md }]}>
               Link up with a code and you will see each other's day, read-only.
             </Text>
@@ -125,7 +129,7 @@ function MyCard({ items, today, name }: { items: Item[]; today: DateKey; name: s
 
   return (
     <View style={[styles.card, { backgroundColor: t.card }]}>
-      <CardHeader name={name} done={view.done.length} total={total} ink={t.me} />
+      <CardHeader name={name} done={view.done.length} total={total} ink={t.me} cat={catPose(empty, total, view.now.length)} />
       {empty ? (
         <Text style={[type.body, { color: t.muted, paddingVertical: space.lg }]}>
           Nothing on your card yet. Tap + to add a habit, a task, or a goal.
@@ -136,7 +140,7 @@ function MyCard({ items, today, name }: { items: Item[]; today: DateKey; name: s
             <ItemRow key={r.item.id} {...rowProps(r)} />
           ))}
           {nowRows.length === 0 && total > 0 && (
-            <Text style={[type.body, { color: t.muted, paddingVertical: space.md }]}>Everything for today is stamped.</Text>
+            <Text style={[type.body, { color: t.muted, paddingVertical: space.md }]}>Everything's stamped. Cat nap time.</Text>
           )}
           {view.thisWeek.length > 0 && <SectionLabel>This week</SectionLabel>}
           {view.thisWeek.map((r) => (
@@ -174,7 +178,13 @@ function PartnerCard({ items, today, name }: { items: Item[] | null; today: Date
   const rows = [...view.now, ...view.done];
   return (
     <View style={[styles.card, { backgroundColor: t.card }]}>
-      <CardHeader name={name} done={view.done.length} total={total} ink={t.partner} />
+      <CardHeader
+        name={name}
+        done={view.done.length}
+        total={total}
+        ink={t.partner}
+        cat={catPose(items !== null && rows.length + view.thisWeek.length === 0, total, view.now.length)}
+      />
       {items === null ? (
         <ActivityIndicator color={t.partner} style={{ marginVertical: space.lg }} />
       ) : rows.length + view.thisWeek.length === 0 ? (
@@ -194,10 +204,15 @@ function PartnerCard({ items, today, name }: { items: Item[] | null; today: Date
   );
 }
 
-function CardHeader({ name, done, total, ink }: { name: string; done: number; total: number; ink: string }) {
+// The card's cat peeks in on an empty card, naps once today's list is all stamped, and sits otherwise.
+const catPose = (empty: boolean, total: number, left: number): CatPose =>
+  empty ? 'peek' : total > 0 && left === 0 ? 'sleep' : 'sit';
+
+function CardHeader({ name, done, total, ink, cat }: { name: string; done: number; total: number; ink: string; cat: CatPose }) {
   const t = useTheme();
   return (
     <View style={styles.cardHeader}>
+      <Cat pose={cat} ink={ink} />
       <Text style={[type.title, { color: t.ink, flex: 1 }]} numberOfLines={1}>
         {name}
       </Text>
