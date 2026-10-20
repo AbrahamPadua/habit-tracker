@@ -1,5 +1,5 @@
 import { FirebaseError } from 'firebase/app';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -36,7 +36,9 @@ export default function SignIn() {
     try {
       if (mode === 'up') {
         setPendingName(name.trim());
-        await createUserWithEmailAndPassword(auth, email.trim(), password);
+        const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+        // Also kept on the account, so if the first profile write fails a later launch still has the name.
+        updateProfile(cred.user, { displayName: name.trim() }).catch((e) => console.warn('save display name', e));
       } else {
         await signInWithEmailAndPassword(auth, email.trim(), password);
       }

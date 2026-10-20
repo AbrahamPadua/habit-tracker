@@ -112,7 +112,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if (snap.metadata.fromCache || created) return;
         created = true;
         // First sign-in, or sign-up was interrupted before the profile was written.
-        const name = (pendingName || auth.currentUser?.email?.split('@')[0] || 'Me').slice(0, 60);
+        const u = auth.currentUser;
+        const name = (pendingName || u?.displayName || u?.email?.split('@')[0] || 'Me').slice(0, 60);
         pendingName = null;
         setDoc(ref, { name, spaceId: null, sharing: true }).catch((e) => console.warn('create profile', e));
       },

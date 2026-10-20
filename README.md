@@ -88,7 +88,7 @@ To test sharing on your own, `scripts/partner.mjs` plays a second partner ("Sam"
 - **Offline check-ins are kept in memory.** They sync when the phone reconnects, but are lost if the app is force-closed while still offline. Moving to `@react-native-firebase` fixes this; it needs a development build instead of Expo Go.
 - **Partners in different time zones** see each other's day by the viewer's date, so around midnight a check-in can look unrecorded for a few hours.
 - **Reminders** fire daily at the set time, including on days the habit is already stamped. They are hidden in Expo Go on Android (its notification module crashes on import there) and work in an installed build from `eas build`.
-- **Not yet run on a physical phone or Android emulator** (none on the build machine). Verified: typecheck, 43 unit tests, 49 security-rule tests, an Android production bundle, and the full flow in a phone-sized web preview against the Firebase emulators.
+- **Tested so far:** runs in Expo Go on an Android phone; the typecheck, unit tests, security-rule tests and Android bundle pass; the full two-partner flow was exercised in a phone-sized web preview against the Firebase emulators. Not yet run as an installed build (EAS APK) or on iPhone.
 
 ## Layout
 

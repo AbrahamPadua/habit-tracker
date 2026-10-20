@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -32,14 +32,18 @@ import { space, type, useTheme } from '../ui/theme';
 type Kind = Item['type'];
 type DueChoice = 'today' | 'tomorrow' | 'nextWeek' | 'none' | 'pick';
 
+const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
+
 export default function ItemSheet() {
   const { id, type: startKind } = useLocalSearchParams<{ id?: string; type?: Kind }>();
   const { myItems, today } = useSession();
   const existing = id ? myItems?.find((i) => i.id === id) : undefined;
-  if (id && !existing) {
-    // Deleted elsewhere or still loading.
-    return null;
-  }
+  // Items have loaded but this one is gone (deleted on the other device, or a stale link): leave, not a blank sheet.
+  const missing = !!id && myItems !== null && !existing;
+  useEffect(() => {
+    if (missing) close();
+  }, [missing]);
+  if (id && !existing) return null;
   return <Editor key={existing?.id ?? 'new'} existing={existing} startKind={startKind} items={myItems ?? []} today={today} />;
 }
 
@@ -71,8 +75,6 @@ function Editor({ existing, startKind, items, today }: { existing?: Item; startK
 
   const [milestones, setMilestones] = useState<Milestone[]>(goal?.milestones ?? []);
   const [draftMilestone, setDraftMilestone] = useState('');
-
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
   /** `also` carries a quick action's own field (pause, drop, achieve) so it saves together with the form. */
   const save = (also: Parameters<typeof updateItem>[2] = {}) => {
@@ -138,10 +140,8 @@ function Editor({ existing, startKind, items, today }: { existing?: Item; startK
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => {
-          report(deleteItem(uid, existing!.id, items));
-          close();
-        },
+        // No close() here: the item leaving myItems closes the sheet once (see ItemSheet).
+        onPress: () => report(deleteItem(uid, existing!.id, items)),
       },
     ]);
 
