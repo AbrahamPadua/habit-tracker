@@ -14,6 +14,8 @@ const light = {
   action: '#1B2030',
   onAction: '#FBFBFC',
   tonal: '#DCE2EB',
+  // My ink mixed toward the card for 1, 2-3 and 4+ stamps a day; lightest step stays above 2:1 on the card.
+  heat: ['#B3A6DC', '#8B77CA', '#5B3FB5'],
 };
 
 const dark: typeof light = {
@@ -28,6 +30,7 @@ const dark: typeof light = {
   action: '#E7E9EF',
   onAction: '#14161C',
   tonal: '#262C38',
+  heat: ['#5F5985', '#877CBD', '#B6A5FF'],
 };
 
 export type Theme = typeof light;

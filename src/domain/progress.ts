@@ -38,3 +38,17 @@ export function goalProgress(g: Goal): { done: number; total: number } {
     total: g.milestones.length,
   };
 }
+
+/** Stamps per day, for the 12-week grid: habit check-ins, finished tasks and milestones. Dropped tasks don't count. */
+export function stampsPerDay(items: Item[]): Map<DateKey, number> {
+  const counts = new Map<DateKey, number>();
+  const add = (d: DateKey | null) => {
+    if (d) counts.set(d, (counts.get(d) ?? 0) + 1);
+  };
+  for (const item of items) {
+    if (item.type === 'habit') item.doneDates.forEach((d) => add(d));
+    else if (item.type === 'task') add(item.droppedOn ? null : item.doneOn);
+    else item.milestones.forEach((m) => add(m.doneOn));
+  }
+  return counts;
+}

@@ -5,7 +5,7 @@ import {
   withCadence, withPause, withResume,
 } from './habits';
 import { changedFields } from './edits';
-import { goalProgress, weekProgress } from './progress';
+import { goalProgress, stampsPerDay, weekProgress } from './progress';
 import { suggestionFor } from './suggestions';
 import { reschedule } from './tasks';
 import { buildToday } from './today';
@@ -368,5 +368,18 @@ describe('changedFields', () => {
     const h = habit();
     expect(changedFields(h, { cadences: [...h.cadences], pauses: [] })).toEqual({});
     expect(changedFields(h, { pauses: [{ from: today, to: null }] })).toEqual({ pauses: [{ from: today, to: null }] });
+  });
+});
+
+describe('stampsPerDay', () => {
+  it('counts habit check-ins, finished tasks and milestones by day, but not dropped tasks', () => {
+    const counts = stampsPerDay([
+      habit({ doneDates: ['2026-10-19', today] }),
+      task({ doneOn: today }),
+      task({ doneOn: '2026-10-19', droppedOn: '2026-10-20' }),
+      goal({ milestones: [{ id: 'a', title: 'A', doneOn: today }, { id: 'b', title: 'B', doneOn: null }] }),
+    ]);
+    expect(Object.fromEntries(counts)).toEqual({ '2026-10-19': 1, [today]: 3 });
+    expect(stampsPerDay([]).size).toBe(0);
   });
 });

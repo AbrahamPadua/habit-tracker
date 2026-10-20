@@ -1,12 +1,13 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { updateItem } from '../../data/actions';
 import { useSession } from '../../data/session';
-import { daysBetween, describeDate } from '../../domain/dates';
+import { addDays, daysBetween, describeDate, weekStart } from '../../domain/dates';
 import { cadenceOn, describeCadence, isPaused, weekCount } from '../../domain/habits';
-import { goalProgress } from '../../domain/progress';
+import { goalProgress, stampsPerDay } from '../../domain/progress';
 import type { DateKey, Goal, Item } from '../../domain/types';
 import { Fab, SectionLabel } from '../../ui/controls';
 import { weekdayMark } from '../../ui/ItemRow';
@@ -25,7 +26,10 @@ export default function Goals() {
         {myItems === null ? (
           <ActivityIndicator color={t.muted} style={{ marginTop: space.xxl }} />
         ) : (
-          <Board items={myItems} today={today} ink={t.me} editable />
+          <>
+            {myItems.length > 0 && <StampGrid items={myItems} today={today} />}
+            <Board items={myItems} today={today} ink={t.me} editable />
+          </>
         )}
         {partner?.sharing && partnerItems && (
           <>
@@ -36,6 +40,61 @@ export default function Goals() {
       </ScrollView>
       <Fab onPress={() => router.push({ pathname: '/item', params: { type: 'goal' } })} label="Add a goal" />
     </SafeAreaView>
+  );
+}
+
+const WEEKS = 12;
+
+/** Your last 12 weeks as a card of stamps: one column per week (Mon at top), darker ink for busier days. */
+function StampGrid({ items, today }: { items: Item[]; today: DateKey }) {
+  const t = useTheme();
+  const [picked, setPicked] = useState<DateKey | null>(null);
+  const counts = useMemo(() => stampsPerDay(items), [items]);
+  const first = addDays(weekStart(today), -7 * (WEEKS - 1));
+  const weeks = Array.from({ length: WEEKS }, (_, w) => Array.from({ length: 7 }, (_, d) => addDays(first, w * 7 + d)));
+  const total = weeks.flat().reduce((sum, day) => sum + (counts.get(day) ?? 0), 0);
+  // An empty day is plain card stock, never a warning: unchecked is not failed.
+  const fill = (n: number) => (n === 0 ? t.tonal : t.heat[n === 1 ? 0 : n <= 3 ? 1 : 2]);
+  const n = picked ? counts.get(picked) ?? 0 : 0;
+
+  return (
+    <View style={[styles.card, { backgroundColor: t.card }]}>
+      <View style={styles.goalHead} accessible accessibilityLabel={`${total} stamps in the last 12 weeks`}>
+        <Text style={[type.title, { color: t.ink, flex: 1 }]}>Last 12 weeks</Text>
+        <Text>
+          <Text style={[type.headline, { color: t.me }]}>{total}</Text>
+          <Text style={[type.meta, { color: t.muted }]}> stamps</Text>
+        </Text>
+      </View>
+      <View style={styles.grid} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+        {weeks.map((days, w) => (
+          <View key={w} style={styles.gridWeek}>
+            {days.map((day) => (
+              <Pressable
+                key={day}
+                disabled={day > today}
+                onPress={() => setPicked(picked === day ? null : day)}
+                style={[
+                  styles.gridDay,
+                  { backgroundColor: day > today ? 'transparent' : fill(counts.get(day) ?? 0) },
+                  picked === day && { borderWidth: 2, borderColor: t.ink },
+                ]}
+              />
+            ))}
+          </View>
+        ))}
+      </View>
+      <View style={styles.gridFoot}>
+        <Text style={[type.meta, { color: t.muted, flex: 1 }]}>
+          {picked ? `${describeDate(picked, today)}: ${n} ${n === 1 ? 'stamp' : 'stamps'}` : 'Tap a day to see it.'}
+        </Text>
+        <Text style={[type.meta, { color: t.muted }]}>Less </Text>
+        {[0, 1, 2, 4].map((k) => (
+          <View key={k} style={[styles.gridKey, { backgroundColor: fill(k) }]} />
+        ))}
+        <Text style={[type.meta, { color: t.muted }]}> More</Text>
+      </View>
+    </View>
   );
 }
 
@@ -210,4 +269,10 @@ const styles = StyleSheet.create({
   dot: { width: 10, height: 10, borderRadius: 5, borderWidth: 1.5 },
   children: { marginTop: space.md, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: space.xs },
   line: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 48 },
+  // Phone width sets the cell size; the cap keeps cells small on tablets and wide windows.
+  grid: { flexDirection: 'row', gap: 4, marginTop: space.md, maxWidth: 380 },
+  gridWeek: { flex: 1, gap: 4 },
+  gridDay: { aspectRatio: 1, borderRadius: 4 },
+  gridFoot: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: space.md },
+  gridKey: { width: 12, height: 12, borderRadius: 3 },
 });
