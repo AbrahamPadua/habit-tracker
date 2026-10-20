@@ -1,0 +1,21 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "env": {
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": ""
+      }
+    },
+    "production": {
+      "autoIncrement": true
+    }
+  }
+}
