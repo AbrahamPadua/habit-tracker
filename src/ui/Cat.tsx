@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, View } from 'react-native';
 import Svg, { Circle, Ellipse, Path, Text as SvgText } from 'react-native-svg';
 import { useTheme } from './theme';
@@ -14,8 +14,8 @@ export function Cat({ pose, ink, size = 40 }: { pose: CatPose; ink: string; size
   const t = useTheme();
   const [moving, setMoving] = useState(false);
   const [blink, setBlink] = useState(false);
-  const tail = useRef(new Animated.Value(0)).current;
-  const breath = useRef(new Animated.Value(0)).current;
+  const [tail] = useState(() => new Animated.Value(0));
+  const [breath] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then((reduce) => setMoving(!reduce));

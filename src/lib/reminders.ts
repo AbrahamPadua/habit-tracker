@@ -11,6 +11,7 @@ const CHANNEL = 'reminders';
 const Notifications: typeof import('expo-notifications') | null = (() => {
   if (Platform.OS === 'web') return null;
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy on purpose, see above
     return require('expo-notifications');
   } catch (e) {
     // Expected in Expo Go on Android; anywhere else this is a real bug worth seeing.

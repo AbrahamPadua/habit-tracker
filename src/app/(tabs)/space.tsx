@@ -18,6 +18,7 @@ export default function SpaceScreen() {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- the field is a draft; a name saved elsewhere replaces it
   useEffect(() => setName(profile?.name ?? ''), [profile?.name]);
 
   const spaceId = members ? profile?.spaceId ?? null : null;
@@ -55,7 +56,7 @@ export default function SpaceScreen() {
             <>
               <Text style={[type.title, { color: t.ink }]}>Linked with {partner?.name ?? 'your partner'}</Text>
               <Text style={[type.meta, { color: t.muted, marginTop: space.xs }]}>
-                You see each other's lists. Neither of you can change the other's.
+                You see each other&apos;s lists. Neither of you can change the other&apos;s.
               </Text>
               <View style={styles.toggle}>
                 <View style={{ flex: 1 }}>
@@ -93,7 +94,7 @@ export default function SpaceScreen() {
                 {pretty}
               </Text>
               <Text style={[type.meta, { color: t.muted, marginBottom: space.md }]}>
-                They enter it under "Join with a code". Your cards appear on each other's Today once they do.
+                They enter it under &quot;Join with a code&quot;. Your cards appear on each other&apos;s Today once they do.
               </Text>
               <Button kind="tonal" label="Share code" onPress={() => Share.share({ message: `Join me on Our Space with this code: ${pretty}` })} />
             </>

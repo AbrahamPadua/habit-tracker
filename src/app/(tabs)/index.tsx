@@ -56,10 +56,10 @@ export default function Today() {
           <View style={[styles.card, { backgroundColor: t.card }]}>
             <View style={styles.cardHeader}>
               <Cat pose="peek" ink={t.partner} />
-              <Text style={[type.title, { color: t.ink, flex: 1 }]}>Your partner's card goes here</Text>
+              <Text style={[type.title, { color: t.ink, flex: 1 }]}>Your partner&apos;s card goes here</Text>
             </View>
             <Text style={[type.meta, { color: t.muted, marginTop: space.xs, marginBottom: space.md }]}>
-              Link up with a code and you will see each other's day, read-only.
+              Link up with a code and you will see each other&apos;s day, read-only.
             </Text>
             <Button kind="tonal" label="Link up" onPress={() => router.navigate('/space')} />
           </View>
@@ -85,6 +85,7 @@ function MyCard({ items, today, name }: { items: Item[]; today: DateKey; name: s
     for (const id of lingering) {
       const r = view.done.find((d) => d.item.id === id);
       if (!r) continue;
+      // eslint-disable-next-line react-hooks/refs -- last render's order, read only to slot a lingering row back in place
       const at = lastNowOrder.current.indexOf(id);
       rows.splice(at < 0 ? rows.length : Math.min(at, rows.length), 0, r);
     }
@@ -140,7 +141,7 @@ function MyCard({ items, today, name }: { items: Item[]; today: DateKey; name: s
             <ItemRow key={r.item.id} {...rowProps(r)} />
           ))}
           {nowRows.length === 0 && total > 0 && (
-            <Text style={[type.body, { color: t.muted, paddingVertical: space.md }]}>Everything's stamped. Cat nap time.</Text>
+            <Text style={[type.body, { color: t.muted, paddingVertical: space.md }]}>Everything&apos;s stamped. Cat nap time.</Text>
           )}
           {view.thisWeek.length > 0 && <SectionLabel>This week</SectionLabel>}
           {view.thisWeek.map((r) => (

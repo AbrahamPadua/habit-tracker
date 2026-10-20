@@ -37,6 +37,7 @@ export default function TabsLayout() {
   useReminderSync();
   const icon =
     (name: IconName, active: IconName) =>
+    // eslint-disable-next-line react/display-name -- tabBarIcon is called as a render function, never mounted as a component
     ({ color, focused }: { color: ColorValue; focused: boolean }) => (
       <TabIcon name={focused ? active : name} color={color} pill={focused ? t.tonal : undefined} />
     );

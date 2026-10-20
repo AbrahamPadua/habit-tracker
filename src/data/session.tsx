@@ -63,6 +63,7 @@ function useToday(): DateKey {
 function useItems(uid: string | null, sharedOnly: boolean): Item[] | null {
   const [items, setItems] = useState<Item[] | null>(null);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- drop the previous list until the new listener answers
     setItems(null);
     if (!uid) return;
     const col = collection(db, 'users', uid, 'items');
@@ -96,6 +97,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const uid = user?.uid ?? null;
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- drop the old user's profile until the new listener answers
     setProfile(null);
     if (!uid) return;
     const ref = doc(db, 'users', uid);
@@ -123,6 +125,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const spaceId = profile?.spaceId ?? null;
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- drop the old space's members until the new listener answers
     setMembers(null);
     if (!uid || !spaceId) return;
     return onSnapshot(
@@ -140,6 +143,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const partnerId = (uid && members?.find((m) => m !== uid)) || null;
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- drop the old partner's profile until the new listener answers
     setPartner(null);
     if (!partnerId) return;
     return onSnapshot(

@@ -21,7 +21,7 @@ import { addDays, describeDate, toDateKey, weekStart } from '../domain/dates';
 import { changedFields } from '../domain/edits';
 import { cadenceOn, describeCadence, isPaused, withCadence, withPause, withResume } from '../domain/habits';
 import { reschedule } from '../domain/tasks';
-import type { Cadence, DateKey, Goal, Habit, Item, Milestone, Task } from '../domain/types';
+import type { Cadence, DateKey, Goal, Habit, Item, Milestone } from '../domain/types';
 import { ensureReminderPermission, remindersSupported } from '../lib/reminders';
 import { Button, Chip, SectionLabel } from '../ui/controls';
 import { weekdayMark } from '../ui/ItemRow';
