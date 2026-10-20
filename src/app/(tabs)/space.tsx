@@ -7,7 +7,7 @@ import { useSession, useUid } from '../../data/session';
 import { auth } from '../../lib/firebase';
 import { syncReminders } from '../../lib/reminders';
 import { Button, ErrorText, SectionLabel } from '../../ui/controls';
-import { report } from '../../ui/report';
+import { failureText, report } from '../../ui/report';
 import { space, type, useTheme } from '../../ui/theme';
 
 export default function SpaceScreen() {
@@ -29,7 +29,7 @@ export default function SpaceScreen() {
     try {
       await fn();
     } catch (e) {
-      setError(e instanceof Error && !('code' in e) ? e.message : 'That did not work. Check your connection and try again.');
+      setError(e instanceof Error && !('code' in e) ? e.message : `That did not work. ${failureText(e)}`);
     } finally {
       setBusy(false);
     }
@@ -79,9 +79,9 @@ export default function SpaceScreen() {
                 label="Unlink"
                 style={{ alignSelf: 'flex-start' }}
                 onPress={() =>
-                  Alert.alert('Unlink?', 'You stop seeing each other right away. Your own lists stay as they are.', [
+                  Alert.alert('Unlink?', 'You stop seeing each other right away and you get a new code. Your own lists stay as they are.', [
                     { text: 'Stay linked', style: 'cancel' },
-                    { text: 'Unlink', style: 'destructive', onPress: () => report(unlink(uid, spaceId!)) },
+                    { text: 'Unlink', style: 'destructive', onPress: () => report(unlink(uid, spaceId!, partnerId)) },
                   ])
                 }
               />

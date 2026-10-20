@@ -1,11 +1,24 @@
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { isPaused } from '../domain/habits';
 import type { DateKey, Habit } from '../domain/types';
 
 const CHANNEL = 'reminders';
 
-if (Platform.OS !== 'web') {
+// expo-notifications 57 throws on import in Expo Go for Android (its push module is stripped there), and that
+// took down every screen importing this file. shortcut: reminders are off in Expo Go on Android; they work in an
+// installed build (`eas build`). Drop the lazy require once Expo Go no longer throws.
+const Notifications: typeof import('expo-notifications') | null = (() => {
+  if (Platform.OS === 'web') return null;
+  try {
+    return require('expo-notifications');
+  } catch (e) {
+    // Expected in Expo Go on Android; anywhere else this is a real bug worth seeing.
+    console.warn('Reminders off: expo-notifications failed to load', e);
+    return null;
+  }
+})();
+
+if (Notifications) {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldPlaySound: false,
@@ -16,11 +29,11 @@ if (Platform.OS !== 'web') {
   });
 }
 
-export const remindersSupported = Platform.OS !== 'web';
+export const remindersSupported = Notifications !== null;
 
 /** Asks once; returns whether reminders can be shown. */
 export async function ensureReminderPermission(): Promise<boolean> {
-  if (!remindersSupported) return false;
+  if (!Notifications) return false;
   if (Platform.OS === 'android') {
     // Android 13+ only shows the permission prompt once a channel exists.
     await Notifications.setNotificationChannelAsync(CHANNEL, {
@@ -42,7 +55,7 @@ export function syncReminders(habits: Habit[], today: DateKey): Promise<void> {
 }
 
 async function resync(habits: Habit[], today: DateKey) {
-  if (!remindersSupported) return;
+  if (!Notifications) return;
   const wanted = habits.filter((h) => h.reminder && !isPaused(h, today));
   await Notifications.cancelAllScheduledNotificationsAsync();
   if (!wanted.length || !(await Notifications.getPermissionsAsync()).granted) return;

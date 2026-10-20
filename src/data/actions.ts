@@ -3,12 +3,12 @@ import {
   arrayRemove,
   arrayUnion,
   collection,
-  deleteDoc,
   doc,
   getDoc,
   serverTimestamp,
   updateDoc,
   writeBatch,
+  type WriteBatch,
 } from 'firebase/firestore';
 import type { DateKey, Habit, Item, Task } from '../domain/types';
 import { db } from '../lib/firebase';
@@ -62,11 +62,17 @@ export function normalizeCode(input: string): string {
   return input.toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
 
-export async function createSpace(uid: string) {
+// The space doc id is the invite code; the rules accept exactly { members: [me], createdAt } on create.
+function addSpace(batch: WriteBatch, uid: string) {
   const code = newCode();
-  const batch = writeBatch(db);
   batch.set(doc(db, 'spaces', code), { members: [uid], createdAt: serverTimestamp() });
   batch.update(doc(db, 'users', uid), { spaceId: code });
+  return code;
+}
+
+export async function createSpace(uid: string) {
+  const batch = writeBatch(db);
+  const code = addSpace(batch, uid);
   await batch.commit();
   return code;
 }
@@ -88,9 +94,12 @@ export async function joinSpace(uid: string, rawCode: string) {
   await batch.commit();
 }
 
-/** I keep the space and its code; my partner's view of me closes immediately. */
-export function unlink(uid: string, spaceId: string) {
-  return updateDoc(doc(db, 'spaces', spaceId), { members: [uid] });
+/** I leave the old space to my partner and move to a fresh one, so the code they know cannot relink us. */
+export async function unlink(uid: string, spaceId: string, partnerId: string) {
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'spaces', spaceId), { members: [partnerId] });
+  addSpace(batch, uid);
+  await batch.commit();
 }
 
 export const newId = () => Math.random().toString(36).slice(2, 10);

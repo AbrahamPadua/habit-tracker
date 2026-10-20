@@ -44,11 +44,14 @@ Product reasoning lives in [PRODUCT.md](PRODUCT.md) and the behavior spec in [do
 
 ## Installable APK (no PC needed afterwards)
 
-Needs a free Expo account. `.env.local` is not uploaded to the build servers, so put the same four Firebase values under `build.preview.env` in `eas.json` first (the Firebase web config is not a secret; the security rules are what protect your data).
+Needs a free Expo account. `.env.local` is excluded from build uploads by `.gitignore`. Upload its four Firebase values to the EAS `preview` environment first; `eas.json` selects that environment for preview builds. Review the file before uploading so local emulator settings stay local. Choose plain text visibility for these `EXPO_PUBLIC_` values (the Firebase web config is not a secret; the security rules are what protect your data).
 
 ```bash
+npx eas-cli@latest env:push --environment preview --path .env.local
 npx eas-cli@latest build -p android --profile preview
 ```
+
+Run `env:push` again whenever those values change. See the [EAS environment variable docs](https://docs.expo.dev/eas/environment-variables/) for details.
 
 It prints a link to an `.apk` you can install on both phones. iPhone later: `npx eas-cli@latest build -p ios` (needs an Apple Developer account); Expo Go on iPhone works for testing before that.
 
@@ -84,8 +87,8 @@ To test sharing on your own, `scripts/partner.mjs` plays a second partner ("Sam"
 
 - **Offline check-ins are kept in memory.** They sync when the phone reconnects, but are lost if the app is force-closed while still offline. Moving to `@react-native-firebase` fixes this; it needs a development build instead of Expo Go.
 - **Partners in different time zones** see each other's day by the viewer's date, so around midnight a check-in can look unrecorded for a few hours.
-- **Reminders** fire daily at the set time, including on days the habit is already stamped.
-- **Not yet run on a physical phone or Android emulator** (none on the build machine). Verified: typecheck, 43 unit tests, 49 security-rule tests, an Android production bundle, and the full flow in a phone-sized web preview against the Firebase emulators.
+- **Reminders** fire daily at the set time, including on days the habit is already stamped. They are hidden in Expo Go on Android (its notification module crashes on import there) and work in an installed build from `eas build`.
+- **Tested so far:** runs in Expo Go on an Android phone; the typecheck, unit tests, security-rule tests and Android bundle pass; the full two-partner flow was exercised in a phone-sized web preview against the Firebase emulators. Not yet run as an installed build (EAS APK) or on iPhone.
 
 ## Layout
 

@@ -1,5 +1,5 @@
 import { FirebaseError } from 'firebase/app';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +15,9 @@ const MESSAGES: Record<string, string> = {
   'auth/weak-password': 'Use at least 6 characters for the password.',
   'auth/network-request-failed': 'No connection. Check your internet and try again.',
   'auth/too-many-requests': 'Too many tries. Wait a minute, then try again.',
+  // Setup mistakes in the Firebase console; worth spelling out since the two of you run it.
+  'auth/configuration-not-found': 'Firebase Authentication is not set up yet. In the Firebase console open Authentication, click Get started, and enable Email/Password.',
+  'auth/operation-not-allowed': 'Email sign-in is off. In the Firebase console enable Authentication > Sign-in method > Email/Password.',
 };
 
 export default function SignIn() {
@@ -33,13 +36,15 @@ export default function SignIn() {
     try {
       if (mode === 'up') {
         setPendingName(name.trim());
-        await createUserWithEmailAndPassword(auth, email.trim(), password);
+        const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+        // Also kept on the account, so if the first profile write fails a later launch still has the name.
+        updateProfile(cred.user, { displayName: name.trim() }).catch((e) => console.warn('save display name', e));
       } else {
         await signInWithEmailAndPassword(auth, email.trim(), password);
       }
     } catch (e) {
       const code = e instanceof FirebaseError ? e.code : '';
-      setError(MESSAGES[code] ?? 'Something went wrong. Try again.');
+      setError(MESSAGES[code] ?? `Something went wrong${code ? ` (${code})` : ''}. Try again.`);
       setBusy(false);
     }
   };

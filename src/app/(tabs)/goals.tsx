@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { updateItem } from '../../data/actions';
 import { useSession } from '../../data/session';
-import { describeDate } from '../../domain/dates';
+import { daysBetween, describeDate } from '../../domain/dates';
 import { cadenceOn, describeCadence, isPaused, weekCount } from '../../domain/habits';
 import { goalProgress } from '../../domain/progress';
 import type { DateKey, Goal, Item } from '../../domain/types';
@@ -45,7 +45,9 @@ function Board({ items, today, ink, editable }: { items: Item[]; today: DateKey;
   const open = goals.filter((g) => !g.doneOn);
   const achieved = goals.filter((g) => g.doneOn);
   const goalIds = new Set(goals.map((g) => g.id));
-  const loose = items.filter((i) => i.type !== 'goal' && (!i.goalId || !goalIds.has(i.goalId)) && isVisible(i));
+  const loose = items.filter((i) => i.type !== 'goal' && (!i.goalId || !goalIds.has(i.goalId)) && isVisible(i, today));
+  // Only the owner sees what they dropped; it is the one place a drop can be undone.
+  const dropped = editable ? items.filter((i) => i.type === 'task' && i.droppedOn) : [];
 
   if (!items.length) {
     return (
@@ -80,13 +82,21 @@ function Board({ items, today, ink, editable }: { items: Item[]; today: DateKey;
               </Pressable>
               {/* Open tasks of an achieved goal would otherwise appear nowhere. */}
               {items
-                .filter((i) => i.type === 'task' && i.goalId === g.id && !i.doneOn && isVisible(i))
+                .filter((i) => i.type === 'task' && i.goalId === g.id && !i.doneOn && isVisible(i, today))
                 .map((i) => (
                   <View key={i.id} style={{ paddingLeft: space.xl }}>
                     <Line item={i} today={today} editable={editable} />
                   </View>
                 ))}
             </View>
+          ))}
+        </View>
+      )}
+      {dropped.length > 0 && (
+        <View style={[styles.card, { backgroundColor: t.card }]}>
+          <SectionLabel>Dropped</SectionLabel>
+          {dropped.map((i) => (
+            <Line key={i.id} item={i} today={today} editable={editable} />
           ))}
         </View>
       )}
@@ -104,7 +114,7 @@ function GoalCard({ goal, items, today, ink, editable }: { goal: Goal; items: It
       }),
     );
   const { done, total } = goalProgress(goal);
-  const children = items.filter((i) => i.type !== 'goal' && i.goalId === goal.id && isVisible(i));
+  const children = items.filter((i) => i.type !== 'goal' && i.goalId === goal.id && isVisible(i, today));
   return (
     <View style={[styles.card, { backgroundColor: t.card }]}>
       <Pressable disabled={!editable} onPress={() => openItem(goal.id)} accessibilityRole={editable ? 'button' : undefined}>
@@ -160,7 +170,15 @@ function Line({ item, today, editable }: { item: Item; today: DateKey; editable?
     const c = cadenceOn(item, today);
     meta = isPaused(item, today) ? 'Paused' : c ? `${describeCadence(c)} · ${weekCount(item, today)} this week` : '';
   } else if (item.type === 'task') {
-    meta = item.doneOn ? `Done ${describeDate(item.doneOn, today).toLowerCase()}` : item.due ? describeDate(item.due, today) : item.pinned ? 'Pinned' : 'No date';
+    meta = item.droppedOn
+      ? 'Dropped'
+      : item.doneOn
+        ? `Done ${describeDate(item.doneOn, today).toLowerCase()}`
+        : item.due
+          ? describeDate(item.due, today)
+          : item.pinned
+            ? 'Pinned'
+            : 'No date';
   }
   return (
     <Pressable disabled={!editable} onPress={() => openItem(item.id)} style={styles.line} accessibilityRole={editable ? 'button' : undefined}>
@@ -177,8 +195,9 @@ function Line({ item, today, editable }: { item: Item; today: DateKey; editable?
   );
 }
 
-// Dropped tasks are kept in data but leave every list.
-const isVisible = (i: Item) => !(i.type === 'task' && i.droppedOn);
+// Dropped tasks leave the goal lists (they wait in Dropped); finished tasks fall off a week after.
+const isVisible = (i: Item, today: DateKey) =>
+  !(i.type === 'task' && (i.droppedOn || (i.doneOn && daysBetween(i.doneOn, today) > 7)));
 
 const openItem = (id: string) => router.push({ pathname: '/item', params: { id } });
 

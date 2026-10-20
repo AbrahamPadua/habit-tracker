@@ -4,6 +4,7 @@ import {
   cadenceOn, describeCadence, isActive, isDoneOn, isPaused, weekCount,
   withCadence, withPause, withResume,
 } from './habits';
+import { changedFields } from './edits';
 import { goalProgress, weekProgress } from './progress';
 import { suggestionFor } from './suggestions';
 import { reschedule } from './tasks';
@@ -253,6 +254,14 @@ describe('progress', () => {
     expect(weekProgress([], today)).toEqual({ done: 0, total: 0 });
   });
 
+  it('leaves a paused weekly habit out of the week, and counts it again once resumed', () => {
+    const weekly = { cadences: [{ from: '2026-09-01', cadence: { kind: 'weekly' as const, times: 3 } }], doneDates: ['2026-10-19'] };
+    expect(weekProgress([habit({ ...weekly, pauses: [{ from: '2026-10-20', to: null }] })], today))
+      .toEqual({ done: 0, total: 0 });
+    expect(weekProgress([habit({ ...weekly, pauses: [{ from: '2026-10-20', to: today }] })], today))
+      .toEqual({ done: 1, total: 3 });
+  });
+
   it('uses the historical target for the requested week and a full target in the creation week', () => {
     const h = habit({ cadences: [{ from: '2026-09-01', cadence: { kind: 'weekly', times: 5 } }],
       doneDates: ['2026-10-12', '2026-10-13', '2026-10-14'] });
@@ -343,5 +352,21 @@ describe('suggestions', () => {
     expect(suggestionFor(goal(), today)).toBeNull();
     expect(suggestionFor(habit({ cadences: [{ from: '2026-09-01', cadence: { kind: 'flexible' } }] }), today))
       .toBeNull();
+  });
+});
+
+describe('changedFields', () => {
+  it('keeps only what the form changed, so a privacy change from the other device is not undone', () => {
+    // The sheet opened the task as public; meanwhile the other device made it private.
+    // The user only renamed it, so `private` must not be written back.
+    const opened = task({ title: 'Old', private: false, pinned: false });
+    expect(changedFields(opened, { title: 'New', private: false, pinned: false })).toEqual({ title: 'New' });
+    expect(changedFields(opened, { title: 'Old', private: false, pinned: false })).toEqual({});
+  });
+
+  it('compares nested values by content, not identity', () => {
+    const h = habit();
+    expect(changedFields(h, { cadences: [...h.cadences], pauses: [] })).toEqual({});
+    expect(changedFields(h, { pauses: [{ from: today, to: null }] })).toEqual({ pauses: [{ from: today, to: null }] });
   });
 });

@@ -18,7 +18,7 @@ export function weekProgress(items: Item[], today: DateKey): { done: number; tot
             if (isDoneOn(item, date)) done++;
           }
         }
-      } else if (cadence?.kind === 'weekly') {
+      } else if (cadence?.kind === 'weekly' && isActive(item, today)) {
         total += cadence.times;
         done += Math.min(weekCount(item, today), cadence.times);
       }
