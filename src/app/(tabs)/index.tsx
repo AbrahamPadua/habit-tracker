@@ -16,6 +16,7 @@ import { Cat, type CatPose } from '../../ui/Cat';
 import { Button, Fab, SectionLabel } from '../../ui/controls';
 import { ItemRow } from '../../ui/ItemRow';
 import { report } from '../../ui/report';
+import { CatEntrance, useDailyWalk } from '../../ui/WalkingCat';
 import { space, type, useTheme } from '../../ui/theme';
 
 // How long a just-stamped row stays in place before it folds into Done.
@@ -27,6 +28,34 @@ export default function Today() {
 
   const header = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
   const week = useMemo(() => weekProgress(myItems ?? [], today), [myItems, today]);
+
+  // Once a day my cat walks in along the floor and jumps onto my card; its spot stays empty until it lands.
+  const stage = useRef<View>(null);
+  const catRef = useRef<View>(null);
+  const { state: walkState, start: startWalk, finish: finishWalk } = useDailyWalk(today);
+  const [route, setRoute] = useState<{ floorY: number; width: number; to: { x: number; y: number; w: number; h: number } } | null>(null);
+  const loaded = myItems !== null;
+  useEffect(() => {
+    if (walkState !== 'walk' || !loaded) return;
+    // Measure once the card has laid out, in the overlay's coordinates. Whatever goes wrong, the card
+    // must not lose its cat: give up and show it in place after a few seconds.
+    const measure = setTimeout(() => {
+      const box = stage.current;
+      const spot = catRef.current;
+      if (!box || !spot) return finishWalk();
+      box.measureInWindow((sx, sy, sw, sh) =>
+        spot.measureInWindow((x, y, w, h) => {
+          startWalk();
+          setRoute({ floorY: sh - space.sm, width: sw, to: { x: x - sx, y: y - sy, w, h } });
+        }),
+      );
+    }, 50);
+    const giveUp = setTimeout(finishWalk, 6000);
+    return () => {
+      clearTimeout(measure);
+      clearTimeout(giveUp);
+    };
+  }, [walkState, loaded, startWalk, finishWalk]);
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: t.ground }}>
@@ -43,7 +72,13 @@ export default function Today() {
         {myItems === null ? (
           <ActivityIndicator color={t.me} style={{ marginTop: space.xxl }} />
         ) : (
-          <MyCard items={myItems} today={today} name={profile?.name ?? 'You'} />
+          <MyCard
+            items={myItems}
+            today={today}
+            name={profile?.name ?? 'You'}
+            catRef={catRef}
+            catHidden={walkState !== 'done'}
+          />
         )}
 
         {partnerId && partner ? (
@@ -66,12 +101,28 @@ export default function Today() {
         )}
       </ScrollView>
 
+      <View ref={stage} style={StyleSheet.absoluteFill} pointerEvents="none">
+        {route && walkState === 'walk' && <CatEntrance {...route} ink={t.me} onDone={finishWalk} />}
+      </View>
+
       <Fab onPress={() => router.push('/item')} label="Add a goal, habit or task" />
     </SafeAreaView>
   );
 }
 
-function MyCard({ items, today, name }: { items: Item[]; today: DateKey; name: string }) {
+function MyCard({
+  items,
+  today,
+  name,
+  catRef,
+  catHidden,
+}: {
+  items: Item[];
+  today: DateKey;
+  name: string;
+  catRef: React.RefObject<View | null>;
+  catHidden: boolean;
+}) {
   const t = useTheme();
   const uid = useUid();
   const view = useMemo(() => buildToday(items, today), [items, today]);
@@ -130,7 +181,15 @@ function MyCard({ items, today, name }: { items: Item[]; today: DateKey; name: s
 
   return (
     <View style={[styles.card, { backgroundColor: t.card }]}>
-      <CardHeader name={name} done={view.done.length} total={total} ink={t.me} cat={catPose(empty, total, view.now.length)} />
+      <CardHeader
+        name={name}
+        done={view.done.length}
+        total={total}
+        ink={t.me}
+        cat={catPose(empty, total, view.now.length)}
+        catRef={catRef}
+        catHidden={catHidden}
+      />
       {empty ? (
         <Text style={[type.body, { color: t.muted, paddingVertical: space.lg }]}>
           Nothing on your card yet. Tap + to add a habit, a task, or a goal.
@@ -209,11 +268,29 @@ function PartnerCard({ items, today, name }: { items: Item[] | null; today: Date
 const catPose = (empty: boolean, total: number, left: number): CatPose =>
   empty ? 'peek' : total > 0 && left === 0 ? 'sleep' : 'sit';
 
-function CardHeader({ name, done, total, ink, cat }: { name: string; done: number; total: number; ink: string; cat: CatPose }) {
+function CardHeader({
+  name,
+  done,
+  total,
+  ink,
+  cat,
+  catRef,
+  catHidden,
+}: {
+  name: string;
+  done: number;
+  total: number;
+  ink: string;
+  cat: CatPose;
+  catRef?: React.RefObject<View | null>;
+  catHidden?: boolean;
+}) {
   const t = useTheme();
   return (
     <View style={styles.cardHeader}>
-      <Cat pose={cat} ink={ink} />
+      <View ref={catRef} style={{ opacity: catHidden ? 0 : 1 }}>
+        <Cat pose={cat} ink={ink} />
+      </View>
       <Text style={[type.title, { color: t.ink, flex: 1 }]} numberOfLines={1}>
         {name}
       </Text>
