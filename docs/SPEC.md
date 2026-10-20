@@ -78,7 +78,7 @@ spaces/{code}               { members: [uid] | [uid, uid], createdAt }
 ## Screens
 
 - **Today**: your list (daily habits + today's tasks, then "This week", then collapsed "Done") and your partner's list (read-only). Header: today count and "This week: X of Y". Private suggestions appear as a small card on your own rows.
-- **Goals**: your goals with milestones and linked habits/tasks, then "Not in a goal"; partner's goals read-only.
+- **Goals**: a "Last 12 weeks" grid of your own stamps per day (habit check-ins, finished tasks, milestones; dropped tasks excluded), then your goals with milestones and linked habits/tasks, then "Not in a goal"; partner's goals read-only, without a grid.
 - **Add / edit** (one sheet): type, title, cadence or due date, goal link, private, reminder (habits). Edit adds: backfill strip, pause/resume, drop, delete, milestones.
 - **Space / settings**: name, create or join a space with a code, share toggle (stop sharing), unlink, sign out.
 

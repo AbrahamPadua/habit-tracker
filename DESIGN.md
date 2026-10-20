@@ -206,6 +206,9 @@ A 40px circular slot with a 1.5px `faint` outline inside a 48x48 hit area. Press
 ### Punches
 Weekly targets show N small circles (10px, 1.5px outline) filled left to right in the person's ink; extra completions show "+n".
 
+### Stamp Grid
+The last 12 weeks on Goals, owner only: 12 week columns (Monday at top) of rounded 4px-radius day cells that fill the card width with a 4px gap. Empty days are `tonal`; 1, 2-3 and 4+ stamps use the `heat` ramp (my ink mixed toward the card, lightest step above 2:1 on the card, validated in both themes). Future days in the current week are blank. Title and total stamps sit above, a "Less / More" key and a tap readout ("Tue: 3 stamps") below. No streaks, no red, no partner grid.
+
 ### Item Row
 Title (body, up to 2 lines, muted when done, no strikethrough; labelled "Edit <title>, <meta>") over a meta line (punches, meta text joined by " · ", lock glyph if private). Stamp on the right, move icon (22px) before it on any open task. A hairline rule below. Moving opens chips (Today, Tomorrow, Next week, Someday, Drop it). Suggestions appear as a `tonal` strip with ink text, 12px radius, with a selected and a plain chip.
 
