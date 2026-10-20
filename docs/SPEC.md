@@ -69,7 +69,7 @@ spaces/{code}               { members: [uid] | [uid, uid], createdAt }
 - The space doc id is the invite code (8 chars, no ambiguous characters). Any signed-in user may `get` a space (needed to join), nobody may `list`.
 - Create: `members == [me]`.
 - Join: space has exactly 1 member; new members = old + [me]; only `members` changes.
-- Unlink: a member sets `members` to a single uid that was already a member.
+- Unlink: a member sets `members` to a single uid that was already a member. The app's Unlink gives the old space to the partner and moves me to a fresh space with a new code, in one batch, so the old code cannot relink us.
 - Two users are linked when both user docs have the same `spaceId` and both uids are in that space's `members`.
 - Partner may read your user doc when linked; may read your items when linked, your `sharing == true`, and the item has `private == false`. The partner client queries `where('private', '==', false)`.
 - Only the owner writes their user doc and items.

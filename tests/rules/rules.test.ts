@@ -258,6 +258,17 @@ describe('spaces: unlink', () => {
     await assertFails(updateDoc(doc(as(ALICE), 'spaces', CODE), { members: [CAROL] }));
   });
 
+  it('the app unlink batch (old space to partner, fresh space for me) succeeds and closes the link', async () => {
+    await seedLinked();
+    const db = as(ALICE);
+    const batch = writeBatch(db);
+    batch.update(doc(db, 'spaces', CODE), { members: [BOB] });
+    batch.set(doc(db, 'spaces', 'NEWC2345'), { members: [ALICE], createdAt: serverTimestamp() });
+    batch.update(doc(db, 'users', ALICE), { spaceId: 'NEWC2345' });
+    await assertSucceeds(batch.commit());
+    await assertFails(getDoc(doc(as(BOB), 'users', ALICE, 'items', 'pub')));
+  });
+
   it('unlink that also changes createdAt is denied', async () => {
     await seedSpace([ALICE, BOB]);
     await assertFails(updateDoc(doc(as(ALICE), 'spaces', CODE), { members: [ALICE], createdAt: 999 }));

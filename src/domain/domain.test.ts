@@ -253,6 +253,14 @@ describe('progress', () => {
     expect(weekProgress([], today)).toEqual({ done: 0, total: 0 });
   });
 
+  it('leaves a paused weekly habit out of the week, and counts it again once resumed', () => {
+    const weekly = { cadences: [{ from: '2026-09-01', cadence: { kind: 'weekly' as const, times: 3 } }], doneDates: ['2026-10-19'] };
+    expect(weekProgress([habit({ ...weekly, pauses: [{ from: '2026-10-20', to: null }] })], today))
+      .toEqual({ done: 0, total: 0 });
+    expect(weekProgress([habit({ ...weekly, pauses: [{ from: '2026-10-20', to: today }] })], today))
+      .toEqual({ done: 1, total: 3 });
+  });
+
   it('uses the historical target for the requested week and a full target in the creation week', () => {
     const h = habit({ cadences: [{ from: '2026-09-01', cadence: { kind: 'weekly', times: 5 } }],
       doneDates: ['2026-10-12', '2026-10-13', '2026-10-14'] });

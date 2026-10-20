@@ -53,6 +53,9 @@ function Editor({ existing, startKind, items, today }: { existing?: Item; startK
   const [isPrivate, setPrivate] = useState(existing?.private ?? false);
   const [goalId, setGoalId] = useState<string | null>(existing && existing.type !== 'goal' ? existing.goalId : null);
 
+  // The item as the sheet opened it. "What did I change" is measured against this, not the live copy,
+  // so a change made meanwhile on the other device (say, marking it private) is not written back over.
+  const [opened] = useState(existing);
   const habit = existing?.type === 'habit' ? existing : undefined;
   const task = existing?.type === 'task' ? existing : undefined;
   const goal = existing?.type === 'goal' ? existing : undefined;
@@ -83,7 +86,7 @@ function Editor({ existing, startKind, items, today }: { existing?: Item; startK
               ...base,
               goalId,
               reminder,
-              ...(JSON.stringify(cadenceOn(existing, today)) !== JSON.stringify(cadence) && {
+              ...(JSON.stringify(cadenceOn(opened as Habit, today)) !== JSON.stringify(cadence) && {
                 cadences: withCadence(existing, cadence, today),
               }),
             }
@@ -92,7 +95,7 @@ function Editor({ existing, startKind, items, today }: { existing?: Item; startK
             : { ...base, milestones: [...milestones, ...extra] };
       // Only write what this sheet changed, so edits made meanwhile on the other device survive.
       const patch = Object.fromEntries(
-        Object.entries(next).filter(([k, v]) => JSON.stringify((existing as unknown as Record<string, unknown>)[k]) !== JSON.stringify(v)),
+        Object.entries(next).filter(([k, v]) => JSON.stringify((opened as unknown as Record<string, unknown>)[k]) !== JSON.stringify(v)),
       );
       if (Object.keys(patch).length) report(updateItem(uid, existing.id, patch));
     } else if (kind === 'habit') {
