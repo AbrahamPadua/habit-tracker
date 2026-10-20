@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { addItem, deleteItem, newId, toggleHabit, updateItem } from '../data/actions';
 import { useSession, useUid } from '../data/session';
 import { addDays, describeDate, toDateKey, weekStart } from '../domain/dates';
+import { changedFields } from '../domain/edits';
 import { cadenceOn, describeCadence, isPaused, withCadence, withPause, withResume } from '../domain/habits';
 import { reschedule } from '../domain/tasks';
 import type { Cadence, DateKey, Goal, Habit, Item, Milestone, Task } from '../domain/types';
@@ -73,7 +74,8 @@ function Editor({ existing, startKind, items, today }: { existing?: Item; startK
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
-  const save = () => {
+  /** `also` carries a quick action's own field (pause, drop, achieve) so it saves together with the form. */
+  const save = (also: Parameters<typeof updateItem>[2] = {}) => {
     const name = title.trim();
     if (!name) return;
     const extra = draftMilestone.trim() ? [{ id: newId(), title: draftMilestone.trim(), doneOn: null }] : [];
@@ -93,10 +95,7 @@ function Editor({ existing, startKind, items, today }: { existing?: Item; startK
           : existing.type === 'task'
             ? { ...base, goalId, pinned, ...reschedule(existing, due) }
             : { ...base, milestones: [...milestones, ...extra] };
-      // Only write what this sheet changed, so edits made meanwhile on the other device survive.
-      const patch = Object.fromEntries(
-        Object.entries(next).filter(([k, v]) => JSON.stringify((opened as unknown as Record<string, unknown>)[k]) !== JSON.stringify(v)),
-      );
+      const patch = { ...changedFields(opened!, next), ...also };
       if (Object.keys(patch).length) report(updateItem(uid, existing.id, patch));
     } else if (kind === 'habit') {
       report(
@@ -165,7 +164,7 @@ function Editor({ existing, startKind, items, today }: { existing?: Item; startK
           <MaterialCommunityIcons name="close" size={24} color={t.ink} />
         </Pressable>
         <Text style={[type.title, { color: t.ink, flex: 1 }]}>{existing ? 'Edit' : 'Add'}</Text>
-        <Button kind="text" label="Save" onPress={save} disabled={!title.trim()} />
+        <Button kind="text" label="Save" onPress={() => save()} disabled={!title.trim()} />
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -359,21 +358,21 @@ function Editor({ existing, startKind, items, today }: { existing?: Item; startK
             <View style={styles.actions}>
               {habit &&
                 (isPaused(habit, today) ? (
-                  <Button kind="tonal" label="Resume" onPress={() => { report(updateItem(uid, habit.id, { pauses: withResume(habit, today) })); close(); }} />
+                  <Button kind="tonal" label="Resume" onPress={() => save({ pauses: withResume(habit, today) })} />
                 ) : (
-                  <Button kind="tonal" label="Pause for now" onPress={() => { report(updateItem(uid, habit.id, { pauses: withPause(habit, today) })); close(); }} />
+                  <Button kind="tonal" label="Pause for now" onPress={() => save({ pauses: withPause(habit, today) })} />
                 ))}
               {task && !task.doneOn && !task.droppedOn && (
-                <Button kind="tonal" label="Drop it" onPress={() => { report(updateItem(uid, task.id, { droppedOn: today })); close(); }} />
+                <Button kind="tonal" label="Drop it" onPress={() => save({ droppedOn: today })} />
               )}
               {task?.droppedOn && (
-                <Button kind="tonal" label="Bring it back" onPress={() => { report(updateItem(uid, task.id, { droppedOn: null })); close(); }} />
+                <Button kind="tonal" label="Bring it back" onPress={() => save({ droppedOn: null })} />
               )}
               {goal && (
                 <Button
                   kind="tonal"
                   label={goal.doneOn ? 'Reopen goal' : 'Mark achieved'}
-                  onPress={() => { report(updateItem(uid, goal.id, { doneOn: goal.doneOn ? null : today })); close(); }}
+                  onPress={() => save({ doneOn: goal.doneOn ? null : today })}
                 />
               )}
               <Button kind="text" label="Delete" onPress={remove} />

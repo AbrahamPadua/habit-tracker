@@ -36,6 +36,12 @@
     "scheme": "ourspace",
     "experiments": {
       "typedRoutes": false
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a3ef44c7-a9ae-4151-8915-8b0ee3f39274"
+      }
     }
   }
 }

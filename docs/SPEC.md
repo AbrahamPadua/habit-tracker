@@ -37,7 +37,8 @@ Habit rules:
 
 Task rules:
 - Reschedule sets `due` and increments `deferCount` when the new date is later than the old one.
-- Drop sets `droppedOn`. Dropped tasks disappear from Today and Goals (kept in data).
+- Drop sets `droppedOn`. Dropped tasks leave Today and the goal lists and wait in a "Dropped" list at the bottom of Goals (owner only), where they can be brought back.
+- Finished tasks leave the Goals lists a week after `doneOn`.
 
 Goal rules:
 - `milestones: {id, title, doneOn}[]`. Progress = done milestones / total.

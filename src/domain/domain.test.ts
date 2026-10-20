@@ -4,6 +4,7 @@ import {
   cadenceOn, describeCadence, isActive, isDoneOn, isPaused, weekCount,
   withCadence, withPause, withResume,
 } from './habits';
+import { changedFields } from './edits';
 import { goalProgress, weekProgress } from './progress';
 import { suggestionFor } from './suggestions';
 import { reschedule } from './tasks';
@@ -351,5 +352,21 @@ describe('suggestions', () => {
     expect(suggestionFor(goal(), today)).toBeNull();
     expect(suggestionFor(habit({ cadences: [{ from: '2026-09-01', cadence: { kind: 'flexible' } }] }), today))
       .toBeNull();
+  });
+});
+
+describe('changedFields', () => {
+  it('keeps only what the form changed, so a privacy change from the other device is not undone', () => {
+    // The sheet opened the task as public; meanwhile the other device made it private.
+    // The user only renamed it, so `private` must not be written back.
+    const opened = task({ title: 'Old', private: false, pinned: false });
+    expect(changedFields(opened, { title: 'New', private: false, pinned: false })).toEqual({ title: 'New' });
+    expect(changedFields(opened, { title: 'Old', private: false, pinned: false })).toEqual({});
+  });
+
+  it('compares nested values by content, not identity', () => {
+    const h = habit();
+    expect(changedFields(h, { cadences: [...h.cadences], pauses: [] })).toEqual({});
+    expect(changedFields(h, { pauses: [{ from: today, to: null }] })).toEqual({ pauses: [{ from: today, to: null }] });
   });
 });

@@ -99,6 +99,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setProfile(null);
     if (!uid) return;
     const ref = doc(db, 'users', uid);
+    // Metadata-only snapshots can repeat "missing" before our own write shows up; create once, or the
+    // second create overwrites the chosen name with the email fallback.
+    let created = false;
     return onSnapshot(
       ref,
       // Metadata changes too, so a cached "missing" is followed by the server's answer.
@@ -106,7 +109,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       (snap) => {
         if (snap.exists()) return setProfile(snap.data() as Profile);
         // A cache miss while offline is not "no profile"; writing one then would wipe the space link.
-        if (snap.metadata.fromCache) return;
+        if (snap.metadata.fromCache || created) return;
+        created = true;
         // First sign-in, or sign-up was interrupted before the profile was written.
         const name = (pendingName || auth.currentUser?.email?.split('@')[0] || 'Me').slice(0, 60);
         pendingName = null;

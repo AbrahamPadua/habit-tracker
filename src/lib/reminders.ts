@@ -11,7 +11,9 @@ const Notifications: typeof import('expo-notifications') | null = (() => {
   if (Platform.OS === 'web') return null;
   try {
     return require('expo-notifications');
-  } catch {
+  } catch (e) {
+    // Expected in Expo Go on Android; anywhere else this is a real bug worth seeing.
+    console.warn('Reminders off: expo-notifications failed to load', e);
     return null;
   }
 })();
