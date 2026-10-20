@@ -5,6 +5,7 @@ import {
   withCadence, withPause, withResume,
 } from './habits';
 import { changedFields } from './edits';
+import { NUDGES, nudgeFor } from './nudges';
 import { goalProgress, stampsPerDay, weekProgress } from './progress';
 import { suggestionFor } from './suggestions';
 import { reschedule } from './tasks';
@@ -381,5 +382,15 @@ describe('stampsPerDay', () => {
     ]);
     expect(Object.fromEntries(counts)).toEqual({ '2026-10-19': 1, [today]: 3 });
     expect(stampsPerDay([]).size).toBe(0);
+  });
+});
+
+describe('nudgeFor', () => {
+  it('keeps one line per habit per day and varies it across the week', () => {
+    expect(nudgeFor('habit-1', today)).toBe(nudgeFor('habit-1', today));
+    const week = new Set(Array.from({ length: 7 }, (_, i) => nudgeFor('habit-1', addDays(today, i))));
+    expect(week.size).toBeGreaterThan(1);
+    // Notification bodies get cut off on small screens, and the app never uses dashes in copy.
+    for (const line of NUDGES) expect(line.length <= 70 && !/[\u2013\u2014]/.test(line)).toBe(true);
   });
 });

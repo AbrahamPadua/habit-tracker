@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { isPaused } from '../domain/habits';
+import { nudgeFor } from '../domain/nudges';
 import type { DateKey, Habit } from '../domain/types';
 
 const CHANNEL = 'reminders';
@@ -62,7 +63,7 @@ async function resync(habits: Habit[], today: DateKey) {
   for (const h of wanted) {
     const [hour, minute] = h.reminder!.split(':').map(Number);
     await Notifications.scheduleNotificationAsync({
-      content: { title: h.title, body: 'Whenever you are ready.' },
+      content: { title: h.title, body: nudgeFor(h.id, today) },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
         hour,
