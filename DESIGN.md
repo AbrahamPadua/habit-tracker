@@ -206,6 +206,9 @@ A 40px circular slot with a 1.5px `faint` outline inside a 48x48 hit area. Press
 ### Punches
 Weekly targets show N small circles (10px, 1.5px outline) filled left to right in the person's ink; extra completions show "+n".
 
+### Card Cat
+A small cat drawn in ink lines on card stock (`src/ui/Cat.tsx`, react-native-svg), wearing a collar and nose in its person's stamp ink: violet on my card, teal on my partner's. It sits at the left of each card header at 40px, and at 72px on sign-in. It sits and blinks at uneven 3 to 6 second intervals with a slow tail swish while something is left for today, curls up asleep and breathes once today's list is all stamped, and peeks in on an empty card or the partner invite. Decorative only: hidden from screen readers, not touchable, and still when Reduce Motion is on. One cat per card. It never celebrates a single stamp and never blocks a tap.
+
 ### Stamp Grid
 The last 12 weeks on Goals, owner only: 12 week columns (Monday at top) of rounded 4px-radius day cells that fill the card width with a 4px gap. Empty days are `tonal`; 1, 2-3 and 4+ stamps use the `heat` ramp (my ink mixed toward the card, lightest step above 2:1 on the card, validated in both themes). Future days in the current week are blank. Title and total stamps sit above, a "Less / More" key and a tap readout ("Tue: 3 stamps") below. No streaks, no red, no partner grid.
 

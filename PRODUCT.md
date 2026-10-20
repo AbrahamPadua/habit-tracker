@@ -44,6 +44,10 @@ Not a productivity platform and not social media. Two linked lists in one space,
 
 Working name "Our Space", taken from the mock header in the design conversation *(assumed; the owner has not named the app)*.
 
+Voice (confirmed by the owner): funny and a little crude, something the two of them laugh at together. Reminders can say "damn" or "cute butt". They tease, but they never guilt-trip, shame, or call a skipped day a failure.
+
+Mascot (confirmed): a cute cat that gives the app some life without pulling attention from checking in.
+
 ## Evidence on Hand
 
 None. No users, testimonials, or metrics exist yet; do not invent any.
