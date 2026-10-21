@@ -54,7 +54,12 @@ export function Cat({ pose, ink, size = 40 }: { pose: CatPose; ink: string; size
       );
     const loop = pose === 'sleep' ? swish(breath, 1800, 300) : pose === 'sit' ? swish(tail, 700, 2600) : null;
     loop?.start();
-    return () => loop?.stop();
+    return () => {
+      loop?.stop();
+      // A stopped loop freezes mid-swish; settle so the next pose (or Reduce Motion) starts straight.
+      tail.setValue(0);
+      breath.setValue(0);
+    };
   }, [moving, pose, tail, breath]);
 
   const line = { stroke: t.ink, strokeWidth: 2.4, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
