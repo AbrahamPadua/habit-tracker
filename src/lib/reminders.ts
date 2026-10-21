@@ -60,7 +60,8 @@ async function resync(habits: Habit[], today: DateKey) {
   if (!Notifications) return;
   const wanted = habits.filter((h) => h.reminder && !isPaused(h, today));
   await Notifications.cancelAllScheduledNotificationsAsync();
-  if (!wanted.length || !(await Notifications.getPermissionsAsync()).granted) return;
+  // Asks here too: after a reinstall or on a new phone the saved reminders arrive before any permission does.
+  if (!wanted.length || !(await ensureReminderPermission())) return;
   for (const h of wanted) {
     const [hour, minute] = h.reminder!.split(':').map(Number);
     await Notifications.scheduleNotificationAsync({
