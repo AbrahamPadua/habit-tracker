@@ -1,6 +1,5 @@
 /** Key points of the cat's daily entrance, in the overlay's coordinates (top-left of the walker). */
 export interface CatPath {
-  startX: number;
   takeoffX: number;
   landX: number;
   spotX: number;
@@ -22,7 +21,6 @@ export function catPath(
   const spotX = to.x + to.w / 2 - walker.w / 2;
   const cardY = to.y + to.h - walker.h;
   return {
-    startX: -walker.w,
     takeoffX: width * 0.3,
     landX: Math.min(width - walker.w - 16, spotX + width * 0.35),
     spotX,
