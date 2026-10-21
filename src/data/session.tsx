@@ -135,7 +135,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         // An optimistic join would start partner listeners the server still refuses; listeners never retry.
         if (snap.metadata.hasPendingWrites) return;
         const m = (snap.data()?.members as string[] | undefined) ?? [];
-        setMembers(m.includes(uid) ? m : null);
+        // A closed space is where my partner unlinked from me; I start over with a new code.
+        setMembers(m.includes(uid) && !snap.data()?.closed ? m : null);
       },
       (err) => console.warn('space listener', err.code),
     );

@@ -262,11 +262,23 @@ describe('spaces: unlink', () => {
     await seedLinked();
     const db = as(ALICE);
     const batch = writeBatch(db);
-    batch.update(doc(db, 'spaces', CODE), { members: [BOB] });
+    batch.update(doc(db, 'spaces', CODE), { members: [BOB], closed: true });
     batch.set(doc(db, 'spaces', 'NEWC2345'), { members: [ALICE], createdAt: serverTimestamp() });
     batch.update(doc(db, 'users', ALICE), { spaceId: 'NEWC2345' });
     await assertSucceeds(batch.commit());
     await assertFails(getDoc(doc(as(BOB), 'users', ALICE, 'items', 'pub')));
+  });
+
+  it('nobody can join the closed old space afterwards, not even the one who left', async () => {
+    await seedLinked();
+    await assertSucceeds(updateDoc(doc(as(ALICE), 'spaces', CODE), { members: [BOB], closed: true }));
+    await assertFails(updateDoc(doc(as(ALICE), 'spaces', CODE), { members: arrayUnion(ALICE) }));
+    await assertFails(updateDoc(doc(as(CAROL), 'spaces', CODE), { members: arrayUnion(CAROL) }));
+  });
+
+  it('closed must be true or false', async () => {
+    await seedSpace([ALICE, BOB]);
+    await assertFails(updateDoc(doc(as(ALICE), 'spaces', CODE), { members: [BOB], closed: 'yes' }));
   });
 
   it('unlink that also changes createdAt is denied', async () => {

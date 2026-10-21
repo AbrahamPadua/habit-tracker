@@ -94,10 +94,13 @@ export async function joinSpace(uid: string, rawCode: string) {
   await batch.commit();
 }
 
-/** I leave the old space to my partner and move to a fresh one, so the code they know cannot relink us. */
+/**
+ * I leave the old space to my partner, closed so nobody can join it with the old code (me included),
+ * and move to a fresh one. My partner then sees "Start your space" and gets a new code too.
+ */
 export async function unlink(uid: string, spaceId: string, partnerId: string) {
   const batch = writeBatch(db);
-  batch.update(doc(db, 'spaces', spaceId), { members: [partnerId] });
+  batch.update(doc(db, 'spaces', spaceId), { members: [partnerId], closed: true });
   addSpace(batch, uid);
   await batch.commit();
 }
