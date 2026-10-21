@@ -152,7 +152,7 @@ function MyCard({
   const toggle = (row: TodayRow) => {
     const { item } = row;
     if (!row.done && view.now.includes(row)) {
-      setLingering((l) => [...l, item.id]);
+      setLingering((l) => (l.includes(item.id) ? l : [...l, item.id]));
       setTimeout(() => setLingering((l) => l.filter((id) => id !== item.id)), LINGER_MS);
     }
     report(item.type === 'habit' ? toggleHabit(uid, item, today) : toggleTask(uid, item, today));
