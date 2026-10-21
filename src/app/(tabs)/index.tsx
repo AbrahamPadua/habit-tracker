@@ -24,7 +24,9 @@ const LINGER_MS = 1400;
 
 export default function Today() {
   const t = useTheme();
-  const { profile, partner, partnerId, myItems, partnerItems, today } = useSession();
+  const { profile, members, partner, partnerId, myItems, partnerItems, today } = useSession();
+  // Profile, space and partner load one after another; until they have, don't offer to link up.
+  const linkLoading = !profile || members === undefined || (!!partnerId && partner === undefined);
 
   const header = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
   const week = useMemo(() => weekProgress(myItems ?? [], today), [myItems, today]);
@@ -87,7 +89,7 @@ export default function Today() {
           ) : (
             <Note text={`${partner.name} has paused sharing for now.`} />
           )
-        ) : (
+        ) : linkLoading ? null : (
           <View style={[styles.card, { backgroundColor: t.card }]}>
             <View style={styles.cardHeader}>
               <Cat pose="peek" ink={t.partner} />
