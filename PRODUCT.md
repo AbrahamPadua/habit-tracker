@@ -46,7 +46,7 @@ Working name "Our Space", taken from the mock header in the design conversation 
 
 Voice (confirmed by the owner): funny and a little crude, something the two of them laugh at together. Reminders can say "damn" or "cute butt". They tease, but they never guilt-trip, shame, or call a skipped day a failure.
 
-Mascot (confirmed): a cute cat that gives the app some life without pulling attention from checking in.
+Mascot (confirmed): Tommy Boy, the owner's tuxedo cat, drawn small and cute to give the app some life without pulling attention from checking in.
 
 ## Evidence on Hand
 
