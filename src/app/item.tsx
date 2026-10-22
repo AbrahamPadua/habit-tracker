@@ -51,7 +51,11 @@ function Editor({ existing, startKind, items, today }: { existing?: Item; startK
   const t = useTheme();
   const uid = useUid();
   const { partner } = useSession();
-  const goals = items.filter((i): i is Goal => i.type === 'goal' && i.id !== existing?.id && !i.doneOn);
+  // Open goals, plus the one this item already belongs to even if it has been achieved.
+  const goals = items.filter(
+    (i): i is Goal =>
+      i.type === 'goal' && i.id !== existing?.id && (!i.doneOn || (existing?.type !== 'goal' && i.id === existing?.goalId)),
+  );
 
   const [kind, setKind] = useState<Kind>(existing?.type ?? startKind ?? 'habit');
   const [title, setTitle] = useState(existing?.title ?? '');
