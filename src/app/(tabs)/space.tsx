@@ -1,6 +1,6 @@
 import { signOut } from 'firebase/auth';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { createSpace, joinSpace, setProfile, unlink } from '../../data/actions';
 import { useSession, useUid } from '../../data/session';
@@ -22,6 +22,8 @@ export default function SpaceScreen() {
   useEffect(() => setName(profile?.name ?? ''), [profile?.name]);
 
   const spaceId = members ? profile?.spaceId ?? null : null;
+  // While my space is still loading, Create or Join would quietly move me out of a link I may have.
+  const loading = members === undefined;
   const pretty = spaceId ? `${spaceId.slice(0, 4)} ${spaceId.slice(4)}` : '';
 
   const run = async (fn: () => Promise<unknown>) => {
@@ -98,6 +100,8 @@ export default function SpaceScreen() {
               </Text>
               <Button kind="tonal" label="Share code" onPress={() => Share.share({ message: `Join me on Our Space with this code: ${pretty}` })} />
             </>
+          ) : loading ? (
+            <ActivityIndicator color={t.muted} />
           ) : (
             <>
               <Text style={[type.title, { color: t.ink }]}>Start your space</Text>
@@ -109,7 +113,7 @@ export default function SpaceScreen() {
           )}
         </View>
 
-        {!partnerId && (
+        {!partnerId && !loading && (
           <>
             <SectionLabel>Join with a code</SectionLabel>
             <TextInput
