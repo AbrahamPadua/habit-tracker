@@ -16,6 +16,8 @@ const light = {
   tonal: '#DCE2EB',
   // My ink mixed toward the card for 1, 2-3 and 4+ stamps a day; lightest step stays above 2:1 on the card.
   heat: ['#B3A6DC', '#8B77CA', '#5B3FB5'],
+  // The tuxedo cat's outline: its own fur color here, a soft grey on dark cards so the black fur doesn't vanish.
+  catRim: '#26272E',
 };
 
 const dark: typeof light = {
@@ -31,6 +33,7 @@ const dark: typeof light = {
   onAction: '#14161C',
   tonal: '#262C38',
   heat: ['#5F5985', '#877CBD', '#B6A5FF'],
+  catRim: '#4E5462',
 };
 
 export type Theme = typeof light;

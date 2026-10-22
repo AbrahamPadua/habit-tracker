@@ -92,7 +92,7 @@ export default function Today() {
         ) : linkLoading ? null : (
           <View style={[styles.card, { backgroundColor: t.card }]}>
             <View style={styles.cardHeader}>
-              <Cat pose="peek" ink={t.partner} />
+              <Cat pose="peek" />
               <Text style={[type.title, { color: t.ink, flex: 1 }]}>Your partner&apos;s card goes here</Text>
             </View>
             <Text style={[type.meta, { color: t.muted, marginTop: space.xs, marginBottom: space.md }]}>
@@ -104,7 +104,7 @@ export default function Today() {
       </ScrollView>
 
       <View ref={stage} style={StyleSheet.absoluteFill} pointerEvents="none">
-        {route && walkState === 'walk' && <CatEntrance {...route} ink={t.me} onDone={finishWalk} />}
+        {route && walkState === 'walk' && <CatEntrance {...route} onDone={finishWalk} />}
       </View>
 
       <Fab onPress={() => router.push('/item')} label="Add a goal, habit or task" />
@@ -291,7 +291,7 @@ function CardHeader({
   return (
     <View style={styles.cardHeader}>
       <View ref={catRef} style={{ opacity: catHidden ? 0 : 1 }}>
-        <Cat pose={cat} ink={ink} />
+        <Cat pose={cat} />
       </View>
       <Text style={[type.title, { color: t.ink, flex: 1 }]} numberOfLines={1}>
         {name}

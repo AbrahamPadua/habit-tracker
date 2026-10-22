@@ -56,7 +56,7 @@ export default function SignIn() {
     <SafeAreaView style={{ flex: 1, backgroundColor: t.ground }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-          <Cat pose="sit" ink={t.me} size={72} />
+          <Cat pose="sit" size={72} />
           <Text style={[type.display, { color: t.ink }]}>Our Space</Text>
           <Text style={[type.body, { color: t.muted, marginTop: space.sm, marginBottom: space.xxl }]}>
             Your day and theirs, side by side.
