@@ -8,12 +8,12 @@ import { catPath } from './catPath';
 import { useTheme } from './theme';
 
 /** Rendered size of the side-view cat; the drawing uses a 80x56 viewBox. */
-export const WALKER = { w: 60, h: 42 };
+export const WALKER = { w: 68, h: 48 };
 
-type Frame = 'stepA' | 'stand' | 'stepB' | 'leap';
+export type Frame = 'stepA' | 'stand' | 'stepB' | 'leap';
 
 /** Tommy seen from the side, facing right, in one of his walk frames. */
-function SideCat({ frame }: { frame: Frame }) {
+export function SideCat({ frame }: { frame: Frame }) {
   const rim = useTheme().catRim;
   // How far each foot swings from under its hip: [near front + far hind, far front + near hind].
   const [a, b] = { stepA: [6, -4], stand: [0, 0], stepB: [-4, 6], leap: [10, -10] }[frame];
@@ -31,7 +31,8 @@ function SideCat({ frame }: { frame: Frame }) {
     );
   };
   return (
-    <Svg width={WALKER.w} height={WALKER.h} viewBox="0 0 80 56">
+    // Shifted down so his feet stand on the bottom edge, like the sitting cat's.
+    <Svg width={WALKER.w} height={WALKER.h} viewBox="0 -4 80 56">
       {leg(47, b, true, 0.28)}
       {leg(24, a, true, 0.5)}
       <Limb d="M18.5 27 C8.5 25.5 6 15 10.5 8.5" rim={rim} width={3.2} />
@@ -60,15 +61,17 @@ function SideCat({ frame }: { frame: Frame }) {
   );
 }
 
-const FLOOR_MS = 900;
-const CROUCH_MS = 120;
-const JUMP_MS = 600;
-const LAND_MS = 200;
-const PX_PER_MS = 0.2;
+// Unhurried: he strolls in, settles into a crouch, takes aim, and takes his time on the way up.
+const WALK_PX_PER_MS = 0.12;
+const BACK_PX_PER_MS = 0.08;
+const CROUCH_MS = 250;
+const AIM_MS = 400;
+const LAND_MS = 300;
+const jumpMs = (rise: number) => Math.min(1700, Math.max(900, rise * 2.4));
 
 /**
- * The cat's daily entrance: it walks in along the floor, crouches, leaps onto the top of the card,
- * turns, and walks along the card to its spot. Positions are in the parent overlay's coordinates;
+ * The cat's daily entrance: it walks in along the floor, crouches, leaps up onto the top of the card,
+ * turns, and walks along the edge to its spot. Positions are in the parent overlay's coordinates;
  * taps pass straight through.
  */
 export function CatEntrance({
@@ -90,25 +93,27 @@ export function CatEntrance({
   const [facing, setFacing] = useState(1);
 
   const { takeoffX, landX, spotX, floor, peak, cardY } = catPath(floorY, width, to, WALKER);
-  const backMs = Math.max(300, (landX - spotX) / PX_PER_MS);
+  const floorMs = (takeoffX + WALKER.w) / WALK_PX_PER_MS;
+  const leapMs = jumpMs(floor - cardY);
+  const backMs = Math.max(300, (landX - spotX) / BACK_PX_PER_MS);
 
   useEffect(() => {
     const steps: Frame[] = ['stepA', 'stand', 'stepB', 'stand'];
     let i = 0;
     let walk: ReturnType<typeof setInterval> | undefined;
     const startWalking = () => {
-      walk = setInterval(() => setFrame(steps[i++ % steps.length]), 110);
+      walk = setInterval(() => setFrame(steps[i++ % steps.length]), 140);
     };
     const stopWalking = (next: Frame) => {
       clearInterval(walk);
       setFrame(next);
     };
-    const jumpAt = FLOOR_MS + CROUCH_MS;
-    const landAt = jumpAt + JUMP_MS;
+    const jumpAt = floorMs + CROUCH_MS + AIM_MS;
+    const landAt = jumpAt + leapMs;
     const turnAt = landAt + LAND_MS;
     startWalking();
     const timers = [
-      setTimeout(() => stopWalking('stand'), FLOOR_MS),
+      setTimeout(() => stopWalking('stand'), floorMs),
       setTimeout(() => setFrame('leap'), jumpAt),
       setTimeout(() => setFrame('stand'), landAt),
       setTimeout(() => {
@@ -118,12 +123,13 @@ export function CatEntrance({
       setTimeout(() => stopWalking('stand'), turnAt + backMs),
     ];
     const run = Animated.sequence([
-      Animated.timing(x, { toValue: takeoffX, duration: FLOOR_MS, easing: Easing.linear, useNativeDriver: true }),
-      Animated.timing(squash, { toValue: 0.86, duration: CROUCH_MS, useNativeDriver: true }),
+      Animated.timing(x, { toValue: takeoffX, duration: floorMs, easing: Easing.linear, useNativeDriver: true }),
+      Animated.timing(squash, { toValue: 0.84, duration: CROUCH_MS, useNativeDriver: true }),
+      Animated.delay(AIM_MS),
       Animated.parallel([
         Animated.timing(squash, { toValue: 1, duration: CROUCH_MS, useNativeDriver: true }),
-        Animated.timing(x, { toValue: landX, duration: JUMP_MS, easing: Easing.linear, useNativeDriver: true }),
-        Animated.timing(hop, { toValue: 1, duration: JUMP_MS, easing: Easing.linear, useNativeDriver: true }),
+        Animated.timing(x, { toValue: landX, duration: leapMs, easing: Easing.linear, useNativeDriver: true }),
+        Animated.timing(hop, { toValue: 1, duration: leapMs, easing: Easing.linear, useNativeDriver: true }),
       ]),
       Animated.timing(squash, { toValue: 0.88, duration: LAND_MS / 2, useNativeDriver: true }),
       Animated.timing(squash, { toValue: 1, duration: LAND_MS / 2, useNativeDriver: true }),

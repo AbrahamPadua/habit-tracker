@@ -12,7 +12,7 @@ import { suggestionFor, type Suggestion } from '../../domain/suggestions';
 import { reschedule } from '../../domain/tasks';
 import { buildToday, type TodayRow } from '../../domain/today';
 import type { DateKey, Item } from '../../domain/types';
-import { Cat, type CatPose } from '../../ui/Cat';
+import { CardCat, PERCH, type Rest } from '../../ui/CardCat';
 import { Button, Fab, SectionLabel } from '../../ui/controls';
 import { ItemRow } from '../../ui/ItemRow';
 import { report } from '../../ui/report';
@@ -52,7 +52,7 @@ export default function Today() {
         }),
       );
     }, 50);
-    const giveUp = setTimeout(finishWalk, 6000);
+    const giveUp = setTimeout(finishWalk, 12000);
     return () => {
       clearTimeout(measure);
       clearTimeout(giveUp);
@@ -91,10 +91,7 @@ export default function Today() {
           )
         ) : linkLoading ? null : (
           <View style={[styles.card, { backgroundColor: t.card }]}>
-            <View style={styles.cardHeader}>
-              <Cat pose="peek" />
-              <Text style={[type.title, { color: t.ink, flex: 1 }]}>Your partner&apos;s card goes here</Text>
-            </View>
+            <Text style={[type.title, { color: t.ink }]}>Your partner&apos;s card goes here</Text>
             <Text style={[type.meta, { color: t.muted, marginTop: space.xs, marginBottom: space.md }]}>
               Link up with a code and you will see each other&apos;s day, read-only.
             </Text>
@@ -182,16 +179,9 @@ function MyCard({
   const empty = total === 0 && view.thisWeek.length === 0;
 
   return (
-    <View style={[styles.card, { backgroundColor: t.card }]}>
-      <CardHeader
-        name={name}
-        done={view.done.length}
-        total={total}
-        ink={t.me}
-        cat={catPose(empty, total, view.now.length)}
-        catRef={catRef}
-        catHidden={catHidden}
-      />
+    <View style={[styles.card, styles.perch, { backgroundColor: t.card }]}>
+      <CardCat rest={catPose(empty, total, view.now.length)} hidden={catHidden} spotRef={catRef} />
+      <CardHeader name={name} done={view.done.length} total={total} ink={t.me} />
       {empty ? (
         <Text style={[type.body, { color: t.muted, paddingVertical: space.lg }]}>
           Nothing on your card yet. Tap + to add a habit, a task, or a goal.
@@ -240,13 +230,7 @@ function PartnerCard({ items, today, name }: { items: Item[] | null; today: Date
   const rows = [...view.now, ...view.done];
   return (
     <View style={[styles.card, { backgroundColor: t.card }]}>
-      <CardHeader
-        name={name}
-        done={view.done.length}
-        total={total}
-        ink={t.partner}
-        cat={catPose(items !== null && rows.length + view.thisWeek.length === 0, total, view.now.length)}
-      />
+      <CardHeader name={name} done={view.done.length} total={total} ink={t.partner} />
       {items === null ? (
         <ActivityIndicator color={t.partner} style={{ marginVertical: space.lg }} />
       ) : rows.length + view.thisWeek.length === 0 ? (
@@ -266,33 +250,14 @@ function PartnerCard({ items, today, name }: { items: Item[] | null; today: Date
   );
 }
 
-// The card's cat peeks in on an empty card, naps once today's list is all stamped, and sits otherwise.
-const catPose = (empty: boolean, total: number, left: number): CatPose =>
+// Tommy peeks over an empty card, naps once today's list is all stamped, and sits otherwise.
+const catPose = (empty: boolean, total: number, left: number): Rest =>
   empty ? 'peek' : total > 0 && left === 0 ? 'sleep' : 'sit';
 
-function CardHeader({
-  name,
-  done,
-  total,
-  ink,
-  cat,
-  catRef,
-  catHidden,
-}: {
-  name: string;
-  done: number;
-  total: number;
-  ink: string;
-  cat: CatPose;
-  catRef?: React.RefObject<View | null>;
-  catHidden?: boolean;
-}) {
+function CardHeader({ name, done, total, ink }: { name: string; done: number; total: number; ink: string }) {
   const t = useTheme();
   return (
     <View style={styles.cardHeader}>
-      <View ref={catRef} style={{ opacity: catHidden ? 0 : 1 }}>
-        <Cat pose={cat} />
-      </View>
       <Text style={[type.title, { color: t.ink, flex: 1 }]} numberOfLines={1}>
         {name}
       </Text>
@@ -320,5 +285,7 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingTop: space.sm },
   card: { borderRadius: 20, paddingHorizontal: space.lg, paddingTop: space.lg, paddingBottom: space.sm },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-end', paddingBottom: space.sm, gap: space.md },
+  // Headroom above my card for Tommy to sit on its top edge.
+  perch: { marginTop: PERCH.size - PERCH.overlap - space.lg + space.sm },
   doneToggle: { flexDirection: 'row', alignItems: 'center', gap: space.xs, minHeight: 48 },
 });

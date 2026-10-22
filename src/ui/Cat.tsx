@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, View } from 'react-native';
 import Svg, { Circle, Ellipse, G, Path, Text as SvgText } from 'react-native-svg';
 import { useTheme } from './theme';
 
-export type CatPose = 'sit' | 'sleep' | 'peek';
+export type CatPose = 'sit' | 'sleep' | 'peek' | 'groom';
 
 /** Tommy Boy's coat, the same in both themes: a black and white tuxedo cat either way. */
 export const TUX = {
@@ -90,24 +90,29 @@ function Sole({ x, y, rx, ry, rim }: { x: number; y: number; rx: number; ry: num
   );
 }
 
-/**
- * The card cat, drawn after Tommy Boy: a tuxedo cat with a silver collar and a bone-shaped tag.
- * Sits and blinks while there is something left, naps once the day is stamped, peeks in on an empty card.
- * Purely decorative: hidden from screen readers, never touchable, and still when Reduce Motion is on.
- */
-export function Cat({ pose, size = 40 }: { pose: CatPose; size?: number }) {
-  const t = useTheme();
-  const rim = t.catRim;
+/** False while Reduce Motion is on, so the cat holds still. */
+export function useMotion() {
   const [moving, setMoving] = useState(false);
-  const [blink, setBlink] = useState(false);
-  const [tail] = useState(() => new Animated.Value(0));
-  const [breath] = useState(() => new Animated.Value(0));
-
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then((reduce) => setMoving(!reduce));
     const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (reduce) => setMoving(!reduce));
     return () => sub.remove();
   }, []);
+  return moving;
+}
+
+/**
+ * The cat, drawn after Tommy Boy: a tuxedo cat with a silver collar and a bone-shaped tag, in one pose.
+ * He blinks and swishes his tail while sitting, breathes while asleep, and bobs his head while grooming.
+ * Purely decorative: hidden from screen readers, never touchable, and still when Reduce Motion is on.
+ */
+export function Cat({ pose, size = 40 }: { pose: CatPose; size?: number }) {
+  const t = useTheme();
+  const rim = t.catRim;
+  const moving = useMotion();
+  const [blink, setBlink] = useState(false);
+  const [tail] = useState(() => new Animated.Value(0));
+  const [breath] = useState(() => new Animated.Value(0));
 
   // A blink every few seconds, at uneven intervals so it reads as alive rather than as a metronome.
   useEffect(() => {
@@ -128,29 +133,13 @@ export function Cat({ pose, size = 40 }: { pose: CatPose; size?: number }) {
     };
   }, [moving, pose]);
 
-  // Now and then, while he sits, he plops onto his butt, sticks a leg in the air and licks himself for a bit.
-  const [grooming, setGrooming] = useState(false);
+  // Grooming: his head bobs between two frames, down with the tongue out, then up.
   const [lickDown, setLickDown] = useState(false);
-  const bouts = useRef(0);
   useEffect(() => {
-    if (!moving || pose !== 'sit' || grooming) return;
-    const wait = bouts.current === 0 ? 10_000 + Math.random() * 15_000 : 45_000 + Math.random() * 45_000;
-    const start = setTimeout(() => {
-      bouts.current += 1;
-      setGrooming(true);
-    }, wait);
-    return () => clearTimeout(start);
-  }, [moving, pose, grooming]);
-  useEffect(() => {
-    if (!grooming) return;
+    if (!moving || pose !== 'groom') return;
     const lick = setInterval(() => setLickDown((d) => !d), 230);
-    const done = setTimeout(() => setGrooming(false), 3500);
-    return () => {
-      clearInterval(lick);
-      clearTimeout(done);
-    };
-  }, [grooming]);
-  const licking = grooming && moving && pose === 'sit';
+    return () => clearInterval(lick);
+  }, [moving, pose]);
 
   useEffect(() => {
     if (!moving) return;
@@ -179,7 +168,7 @@ export function Cat({ pose, size = 40 }: { pose: CatPose; size?: number }) {
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      {pose === 'sit' && !licking && (
+      {pose === 'sit' && (
         <Animated.View
           style={{
             position: 'absolute',
@@ -204,7 +193,7 @@ export function Cat({ pose, size = 40 }: { pose: CatPose; size?: number }) {
         }}
       >
         <Svg width={size} height={size} viewBox="0 0 64 64">
-          {pose === 'sit' && !licking && (
+          {pose === 'sit' && (
             <>
               <Fur rim={rim} d="M19 59.5 C15.5 50 20 37.5 32 37 C44 37.5 48.5 50 45 59.5 Z" />
               <Path d="M32 38 C26.5 41 25 48 26.6 54 C28 57.5 36 57.5 37.4 54 C39 48 37.5 41 32 38 Z" fill={TUX.white} />
@@ -215,7 +204,7 @@ export function Cat({ pose, size = 40 }: { pose: CatPose; size?: number }) {
               <Tag x={32} y={43.2} />
             </>
           )}
-          {licking && (
+          {pose === 'groom' && (
             <>
               <Limb d="M24 59 C13 61 7.5 55 9.5 48" rim={rim} width={4.2} />
               {/* The raised hind leg, straight up beside his head: white sock and toe beans in the air. */}
