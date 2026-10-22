@@ -79,7 +79,14 @@ function Editor({ existing, startKind, items, today }: { existing?: Item; startK
   /** `also` carries a quick action's own field (pause, drop, achieve) so it saves together with the form. */
   const save = (also: Parameters<typeof updateItem>[2] = {}) => {
     const name = title.trim();
-    if (!name) return;
+    if (!name) {
+      // With the title box cleared, a quick action still saves on its own; the old title stays.
+      if (existing && Object.keys(also).length) {
+        report(updateItem(uid, existing.id, also));
+        close();
+      }
+      return;
+    }
     const extra = draftMilestone.trim() ? [{ id: newId(), title: draftMilestone.trim(), doneOn: null }] : [];
     const base = { title: name.slice(0, 200), private: isPrivate };
 
