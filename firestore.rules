@@ -75,11 +75,14 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members'])
         && resource.data.members.size() == 1
         && !(request.auth.uid in resource.data.members)
-        && request.resource.data.members == [resource.data.members[0], request.auth.uid];
+        && request.resource.data.members == [resource.data.members[0], request.auth.uid]
+        // Unlink closes the old space, so its code cannot relink anyone, including whoever left.
+        && resource.data.get('closed', false) == false;
     }
 
     function isValidSpaceUnlink() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members'])
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'closed'])
+        && request.resource.data.get('closed', false) is bool
         && request.auth.uid in resource.data.members
         && request.resource.data.members.size() == 1
         && request.resource.data.members[0] in resource.data.members;

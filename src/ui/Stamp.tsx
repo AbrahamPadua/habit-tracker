@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { type, useTheme } from './theme';
 
@@ -16,8 +16,8 @@ interface Props {
 /** The check control: an empty slot that takes a rotated ink stamp. Read-only when onPress is absent. */
 export function Stamp({ stamped, ink, mark, label, onPress, size = 40 }: Props) {
   const t = useTheme();
-  const land = useRef(new Animated.Value(stamped ? 1 : 0)).current;
-  const press = useRef(new Animated.Value(1)).current;
+  const [land] = useState(() => new Animated.Value(stamped ? 1 : 0));
+  const [press] = useState(() => new Animated.Value(1));
   const first = useRef(true);
 
   useEffect(() => {

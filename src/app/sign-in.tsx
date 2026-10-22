@@ -5,6 +5,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { setPendingName } from '../data/session';
 import { auth } from '../lib/firebase';
+import { Cat } from '../ui/Cat';
 import { Button, ErrorText } from '../ui/controls';
 import { space, type, useTheme } from '../ui/theme';
 
@@ -55,6 +56,7 @@ export default function SignIn() {
     <SafeAreaView style={{ flex: 1, backgroundColor: t.ground }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+          <Cat pose="sit" size={72} />
           <Text style={[type.display, { color: t.ink }]}>Our Space</Text>
           <Text style={[type.body, { color: t.muted, marginTop: space.sm, marginBottom: space.xxl }]}>
             Your day and theirs, side by side.
@@ -114,6 +116,6 @@ export default function SignIn() {
 }
 
 const styles = StyleSheet.create({
-  body: { padding: space.xl, paddingTop: 72, flexGrow: 1 },
+  body: { padding: space.xl, paddingTop: 40, flexGrow: 1 },
   input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: space.lg, minHeight: 52, marginBottom: space.md },
 });

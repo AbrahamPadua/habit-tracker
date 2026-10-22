@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { isPaused } from '../domain/habits';
+import { nudgeFor } from '../domain/nudges';
 import type { DateKey, Habit } from '../domain/types';
 
 const CHANNEL = 'reminders';
@@ -10,6 +11,7 @@ const CHANNEL = 'reminders';
 const Notifications: typeof import('expo-notifications') | null = (() => {
   if (Platform.OS === 'web') return null;
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy on purpose, see above
     return require('expo-notifications');
   } catch (e) {
     // Expected in Expo Go on Android; anywhere else this is a real bug worth seeing.
@@ -58,11 +60,12 @@ async function resync(habits: Habit[], today: DateKey) {
   if (!Notifications) return;
   const wanted = habits.filter((h) => h.reminder && !isPaused(h, today));
   await Notifications.cancelAllScheduledNotificationsAsync();
-  if (!wanted.length || !(await Notifications.getPermissionsAsync()).granted) return;
+  // Asks here too: after a reinstall or on a new phone the saved reminders arrive before any permission does.
+  if (!wanted.length || !(await ensureReminderPermission())) return;
   for (const h of wanted) {
     const [hour, minute] = h.reminder!.split(':').map(Number);
     await Notifications.scheduleNotificationAsync({
-      content: { title: h.title, body: 'Whenever you are ready.' },
+      content: { title: h.title, body: nudgeFor(h.id, today) },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
         hour,

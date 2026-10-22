@@ -21,7 +21,7 @@ import { addDays, describeDate, toDateKey, weekStart } from '../domain/dates';
 import { changedFields } from '../domain/edits';
 import { cadenceOn, describeCadence, isPaused, withCadence, withPause, withResume } from '../domain/habits';
 import { reschedule } from '../domain/tasks';
-import type { Cadence, DateKey, Goal, Habit, Item, Milestone, Task } from '../domain/types';
+import type { Cadence, DateKey, Goal, Habit, Item, Milestone } from '../domain/types';
 import { ensureReminderPermission, remindersSupported } from '../lib/reminders';
 import { Button, Chip, SectionLabel } from '../ui/controls';
 import { weekdayMark } from '../ui/ItemRow';
@@ -51,7 +51,11 @@ function Editor({ existing, startKind, items, today }: { existing?: Item; startK
   const t = useTheme();
   const uid = useUid();
   const { partner } = useSession();
-  const goals = items.filter((i): i is Goal => i.type === 'goal' && i.id !== existing?.id && !i.doneOn);
+  // Open goals, plus the one this item already belongs to even if it has been achieved.
+  const goals = items.filter(
+    (i): i is Goal =>
+      i.type === 'goal' && i.id !== existing?.id && (!i.doneOn || (existing?.type !== 'goal' && i.id === existing?.goalId)),
+  );
 
   const [kind, setKind] = useState<Kind>(existing?.type ?? startKind ?? 'habit');
   const [title, setTitle] = useState(existing?.title ?? '');
@@ -79,7 +83,14 @@ function Editor({ existing, startKind, items, today }: { existing?: Item; startK
   /** `also` carries a quick action's own field (pause, drop, achieve) so it saves together with the form. */
   const save = (also: Parameters<typeof updateItem>[2] = {}) => {
     const name = title.trim();
-    if (!name) return;
+    if (!name) {
+      // With the title box cleared, a quick action still saves on its own; the old title stays.
+      if (existing && Object.keys(also).length) {
+        report(updateItem(uid, existing.id, also));
+        close();
+      }
+      return;
+    }
     const extra = draftMilestone.trim() ? [{ id: newId(), title: draftMilestone.trim(), doneOn: null }] : [];
     const base = { title: name.slice(0, 200), private: isPrivate };
 

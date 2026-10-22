@@ -19,11 +19,13 @@ function TabIcon({ name, color, pill }: { name: IconName; color: ColorValue; pil
   );
 }
 
-// Reminders live on this device only; reschedule whenever a reminder, title or pause changes.
+// Reminders live on this device only; reschedule whenever a reminder, title or pause changes, and each new day.
+// shortcut: a DAILY trigger repeats its text, so the joke only changes on days the app is opened; schedule
+// dated one-off notifications instead if that gets stale.
 function useReminderSync() {
   const { myItems, today } = useSession();
   const habits = (myItems ?? []).filter((i): i is Habit => i.type === 'habit' && !!i.reminder);
-  const key = myItems ? habits.map((h) => `${h.id}|${h.title}|${h.reminder}|${isPaused(h, today)}`).join(';') : null;
+  const key = myItems ? today + habits.map((h) => `${h.id}|${h.title}|${h.reminder}|${isPaused(h, today)}`).join(';') : null;
   useEffect(() => {
     if (key !== null) syncReminders(habits, today).catch((e) => console.warn('reminders', e));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -35,6 +37,7 @@ export default function TabsLayout() {
   useReminderSync();
   const icon =
     (name: IconName, active: IconName) =>
+    // eslint-disable-next-line react/display-name -- tabBarIcon is called as a render function, never mounted as a component
     ({ color, focused }: { color: ColorValue; focused: boolean }) => (
       <TabIcon name={focused ? active : name} color={color} pill={focused ? t.tonal : undefined} />
     );

@@ -82,6 +82,7 @@ export async function joinSpace(uid: string, rawCode: string) {
   if (code.length !== 8) throw new Error('Codes are 8 letters and numbers.');
   const snap = await getDoc(doc(db, 'spaces', code));
   if (!snap.exists()) throw new Error('No space has that code. Check it with your partner.');
+  if (snap.data().closed) throw new Error('That code no longer works. Ask your partner for their new one.');
   const members = (snap.data().members as string[]) ?? [];
   if (members.includes(uid)) {
     await updateDoc(doc(db, 'users', uid), { spaceId: code });
@@ -94,10 +95,13 @@ export async function joinSpace(uid: string, rawCode: string) {
   await batch.commit();
 }
 
-/** I leave the old space to my partner and move to a fresh one, so the code they know cannot relink us. */
+/**
+ * I leave the old space to my partner, closed so nobody can join it with the old code (me included),
+ * and move to a fresh one. My partner then sees "Start your space" and gets a new code too.
+ */
 export async function unlink(uid: string, spaceId: string, partnerId: string) {
   const batch = writeBatch(db);
-  batch.update(doc(db, 'spaces', spaceId), { members: [partnerId] });
+  batch.update(doc(db, 'spaces', spaceId), { members: [partnerId], closed: true });
   addSpace(batch, uid);
   await batch.commit();
 }

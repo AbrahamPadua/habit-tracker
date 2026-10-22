@@ -16,10 +16,11 @@ export interface Session {
   /** undefined while Firebase restores the signed-in user. */
   user: User | null | undefined;
   profile: Profile | null;
-  /** Members of my space, or null when I am not in one I belong to. */
-  members: string[] | null;
+  /** Members of my space; null when I have none or am not in it (or it was closed), undefined while it loads. */
+  members: string[] | null | undefined;
   partnerId: string | null;
-  partner: Profile | null;
+  /** null when there is no partner or their profile is out of reach (e.g. mid-unlink), undefined while it loads. */
+  partner: Profile | null | undefined;
   myItems: Item[] | null;
   partnerItems: Item[] | null;
   today: DateKey;
@@ -63,6 +64,7 @@ function useToday(): DateKey {
 function useItems(uid: string | null, sharedOnly: boolean): Item[] | null {
   const [items, setItems] = useState<Item[] | null>(null);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- drop the previous list until the new listener answers
     setItems(null);
     if (!uid) return;
     const col = collection(db, 'users', uid, 'items');
@@ -88,14 +90,17 @@ function useItems(uid: string | null, sharedOnly: boolean): Item[] | null {
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null | undefined>(undefined);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [members, setMembers] = useState<string[] | null>(null);
-  const [partner, setPartner] = useState<Profile | null>(null);
+  // Each answer is tagged with the doc it came from, so a new space or partner reads as loading in the
+  // same render instead of showing the previous answer (or a "no partner" screen) until an effect clears it.
+  const [space, setSpace] = useState<{ id: string; members: string[] | null } | null>(null);
+  const [partnerDoc, setPartnerDoc] = useState<{ id: string; profile: Profile | null } | null>(null);
   const today = useToday();
 
   useEffect(() => onAuthStateChanged(auth, setUser), []);
 
   const uid = user?.uid ?? null;
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- drop the old user's profile until the new listener answers
     setProfile(null);
     if (!uid) return;
     const ref = doc(db, 'users', uid);
@@ -123,7 +128,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const spaceId = profile?.spaceId ?? null;
   useEffect(() => {
-    setMembers(null);
     if (!uid || !spaceId) return;
     return onSnapshot(
       doc(db, 'spaces', spaceId),
@@ -132,23 +136,29 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         // An optimistic join would start partner listeners the server still refuses; listeners never retry.
         if (snap.metadata.hasPendingWrites) return;
         const m = (snap.data()?.members as string[] | undefined) ?? [];
-        setMembers(m.includes(uid) ? m : null);
+        // A closed space is where my partner unlinked from me; I start over with a new code.
+        setSpace({ id: spaceId, members: m.includes(uid) && !snap.data()?.closed ? m : null });
       },
-      (err) => console.warn('space listener', err.code),
+      (err) => {
+        console.warn('space listener', err.code);
+        setSpace({ id: spaceId, members: null });
+      },
     );
   }, [uid, spaceId]);
+  const members = !uid || !spaceId ? null : space?.id === spaceId ? space.members : undefined;
 
   const partnerId = (uid && members?.find((m) => m !== uid)) || null;
   useEffect(() => {
-    setPartner(null);
     if (!partnerId) return;
+    const answer = (p: Profile | null) => setPartnerDoc({ id: partnerId, profile: p });
     return onSnapshot(
       doc(db, 'users', partnerId),
-      (snap) => setPartner(snap.exists() ? (snap.data() as Profile) : null),
+      (snap) => answer(snap.exists() ? (snap.data() as Profile) : null),
       // Denied until the partner's profile points at the same space (e.g. mid-unlink).
-      () => setPartner(null),
+      () => answer(null),
     );
   }, [partnerId]);
+  const partner = !partnerId ? null : partnerDoc?.id === partnerId ? partnerDoc.profile : undefined;
 
   const myItems = useItems(uid, false);
   // Only listen while the partner is actually sharing; otherwise the rules deny the query.

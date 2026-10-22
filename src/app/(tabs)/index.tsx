@@ -12,9 +12,11 @@ import { suggestionFor, type Suggestion } from '../../domain/suggestions';
 import { reschedule } from '../../domain/tasks';
 import { buildToday, type TodayRow } from '../../domain/today';
 import type { DateKey, Item } from '../../domain/types';
+import { CardCat, PERCH, type Rest } from '../../ui/CardCat';
 import { Button, Fab, SectionLabel } from '../../ui/controls';
 import { ItemRow } from '../../ui/ItemRow';
 import { report } from '../../ui/report';
+import { CatEntrance, useDailyWalk } from '../../ui/WalkingCat';
 import { space, type, useTheme } from '../../ui/theme';
 
 // How long a just-stamped row stays in place before it folds into Done.
@@ -22,10 +24,40 @@ const LINGER_MS = 1400;
 
 export default function Today() {
   const t = useTheme();
-  const { profile, partner, partnerId, myItems, partnerItems, today } = useSession();
+  const { profile, members, partner, partnerId, myItems, partnerItems, today } = useSession();
+  // Profile, space and partner load one after another; until they have, don't offer to link up.
+  const linkLoading = !profile || members === undefined || (!!partnerId && partner === undefined);
 
   const header = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
   const week = useMemo(() => weekProgress(myItems ?? [], today), [myItems, today]);
+
+  // Once a day my cat walks in along the floor and jumps onto my card; its spot stays empty until it lands.
+  const stage = useRef<View>(null);
+  const catRef = useRef<View>(null);
+  const { state: walkState, start: startWalk, finish: finishWalk } = useDailyWalk(today);
+  const [route, setRoute] = useState<{ floorY: number; width: number; to: { x: number; y: number; w: number; h: number } } | null>(null);
+  const loaded = myItems !== null;
+  useEffect(() => {
+    if (walkState !== 'walk' || !loaded) return;
+    // Measure once the card has laid out, in the overlay's coordinates. Whatever goes wrong, the card
+    // must not lose its cat: give up and show it in place after a few seconds.
+    const measure = setTimeout(() => {
+      const box = stage.current;
+      const spot = catRef.current;
+      if (!box || !spot) return finishWalk();
+      box.measureInWindow((sx, sy, sw, sh) =>
+        spot.measureInWindow((x, y, w, h) => {
+          startWalk();
+          setRoute({ floorY: sh - space.sm, width: sw, to: { x: x - sx, y: y - sy, w, h } });
+        }),
+      );
+    }, 50);
+    const giveUp = setTimeout(finishWalk, 12000);
+    return () => {
+      clearTimeout(measure);
+      clearTimeout(giveUp);
+    };
+  }, [walkState, loaded, startWalk, finishWalk]);
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: t.ground }}>
@@ -42,7 +74,13 @@ export default function Today() {
         {myItems === null ? (
           <ActivityIndicator color={t.me} style={{ marginTop: space.xxl }} />
         ) : (
-          <MyCard items={myItems} today={today} name={profile?.name ?? 'You'} />
+          <MyCard
+            items={myItems}
+            today={today}
+            name={profile?.name ?? 'You'}
+            catRef={catRef}
+            catHidden={walkState !== 'done'}
+          />
         )}
 
         {partnerId && partner ? (
@@ -51,23 +89,39 @@ export default function Today() {
           ) : (
             <Note text={`${partner.name} has paused sharing for now.`} />
           )
-        ) : (
+        ) : linkLoading ? null : (
           <View style={[styles.card, { backgroundColor: t.card }]}>
-            <Text style={[type.title, { color: t.ink }]}>Your partner's card goes here</Text>
+            <Text style={[type.title, { color: t.ink }]}>Your partner&apos;s card goes here</Text>
             <Text style={[type.meta, { color: t.muted, marginTop: space.xs, marginBottom: space.md }]}>
-              Link up with a code and you will see each other's day, read-only.
+              Link up with a code and you will see each other&apos;s day, read-only.
             </Text>
             <Button kind="tonal" label="Link up" onPress={() => router.navigate('/space')} />
           </View>
         )}
       </ScrollView>
 
+      <View ref={stage} style={StyleSheet.absoluteFill} pointerEvents="none">
+        {route && walkState === 'walk' && <CatEntrance {...route} onDone={finishWalk} />}
+      </View>
+
       <Fab onPress={() => router.push('/item')} label="Add a goal, habit or task" />
     </SafeAreaView>
   );
 }
 
-function MyCard({ items, today, name }: { items: Item[]; today: DateKey; name: string }) {
+function MyCard({
+  items,
+  today,
+  name,
+  catRef,
+  catHidden,
+}: {
+  items: Item[];
+  today: DateKey;
+  name: string;
+  catRef: React.RefObject<View | null>;
+  catHidden: boolean;
+}) {
   const t = useTheme();
   const uid = useUid();
   const view = useMemo(() => buildToday(items, today), [items, today]);
@@ -81,6 +135,7 @@ function MyCard({ items, today, name }: { items: Item[]; today: DateKey; name: s
     for (const id of lingering) {
       const r = view.done.find((d) => d.item.id === id);
       if (!r) continue;
+      // eslint-disable-next-line react-hooks/refs -- last render's order, read only to slot a lingering row back in place
       const at = lastNowOrder.current.indexOf(id);
       rows.splice(at < 0 ? rows.length : Math.min(at, rows.length), 0, r);
     }
@@ -94,7 +149,7 @@ function MyCard({ items, today, name }: { items: Item[]; today: DateKey; name: s
   const toggle = (row: TodayRow) => {
     const { item } = row;
     if (!row.done && view.now.includes(row)) {
-      setLingering((l) => [...l, item.id]);
+      setLingering((l) => (l.includes(item.id) ? l : [...l, item.id]));
       setTimeout(() => setLingering((l) => l.filter((id) => id !== item.id)), LINGER_MS);
     }
     report(item.type === 'habit' ? toggleHabit(uid, item, today) : toggleTask(uid, item, today));
@@ -124,7 +179,8 @@ function MyCard({ items, today, name }: { items: Item[]; today: DateKey; name: s
   const empty = total === 0 && view.thisWeek.length === 0;
 
   return (
-    <View style={[styles.card, { backgroundColor: t.card }]}>
+    <View style={[styles.card, styles.perch, { backgroundColor: t.card }]}>
+      <CardCat rest={catPose(empty, total, view.now.length)} hidden={catHidden} spotRef={catRef} />
       <CardHeader name={name} done={view.done.length} total={total} ink={t.me} />
       {empty ? (
         <Text style={[type.body, { color: t.muted, paddingVertical: space.lg }]}>
@@ -136,7 +192,7 @@ function MyCard({ items, today, name }: { items: Item[]; today: DateKey; name: s
             <ItemRow key={r.item.id} {...rowProps(r)} />
           ))}
           {nowRows.length === 0 && total > 0 && (
-            <Text style={[type.body, { color: t.muted, paddingVertical: space.md }]}>Everything for today is stamped.</Text>
+            <Text style={[type.body, { color: t.muted, paddingVertical: space.md }]}>Everything&apos;s stamped. Cat nap time.</Text>
           )}
           {view.thisWeek.length > 0 && <SectionLabel>This week</SectionLabel>}
           {view.thisWeek.map((r) => (
@@ -194,6 +250,10 @@ function PartnerCard({ items, today, name }: { items: Item[] | null; today: Date
   );
 }
 
+// Tommy peeks over an empty card, naps once today's list is all stamped, and sits otherwise.
+const catPose = (empty: boolean, total: number, left: number): Rest =>
+  empty ? 'peek' : total > 0 && left === 0 ? 'sleep' : 'sit';
+
 function CardHeader({ name, done, total, ink }: { name: string; done: number; total: number; ink: string }) {
   const t = useTheme();
   return (
@@ -225,5 +285,7 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingTop: space.sm },
   card: { borderRadius: 20, paddingHorizontal: space.lg, paddingTop: space.lg, paddingBottom: space.sm },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-end', paddingBottom: space.sm, gap: space.md },
+  // Headroom above my card for Tommy to sit on its top edge.
+  perch: { marginTop: PERCH.size - PERCH.overlap - space.lg + space.sm },
   doneToggle: { flexDirection: 'row', alignItems: 'center', gap: space.xs, minHeight: 48 },
 });

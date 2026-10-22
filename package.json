@@ -20,11 +20,14 @@
     "react-native": "0.86.3",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
+    "react-native-svg": "15.15.4",
     "react-native-web": "^0.21.4"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.2",
     "@types/react": "~19.2.4",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~57.0.2",
     "firebase-tools": "^15.34.0",
     "typescript": "~6.0.3",
     "vitest": "^5.0.5"
@@ -37,7 +40,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run src",
     "test:rules": "firebase emulators:exec --only firestore --project demo-our-space \"vitest run tests/rules\"",
-    "emulators": "firebase emulators:start --only auth,firestore --project demo-our-space"
+    "emulators": "firebase emulators:start --only auth,firestore --project demo-our-space",
+    "lint": "expo lint"
   },
   "private": true,
   "overrides": {
